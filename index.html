@@ -10,7 +10,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <style>
 :root{--orange:#f26522;--orange-light:#ff8a4c;--orange-dim:rgba(242,101,34,0.12);--bg:#f4f6fa;--surface:#fff;--surface3:#eef0f5;--border:#e2e6ef;--text:#1a1f2e;--text2:#5a6380;--text3:#9aa2b8;--green:#16a34a;--green-dim:rgba(22,163,74,0.1);--red:#dc2626;--red-dim:rgba(220,38,38,0.1);--blue:#2563eb;--blue-dim:rgba(37,99,235,0.1);--yellow:#d97706;--yellow-dim:rgba(217,119,6,0.12);--radius:14px;--radius-sm:9px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.06);--shadow-lg:0 8px 32px rgba(0,0,0,0.14);}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -386,11 +385,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <input type="file" id="bill-fatura-file" accept=".pdf,.jpg,.jpeg,.png">
         <div class="upload-icon">📄</div>
         <div class="upload-text">Clique ou arraste o arquivo aqui</div>
-        <div class="upload-sub">PDF, JPG ou PNG • Máx. 10MB</div>
+        <div class="upload-sub">PDF, JPG ou PNG • Máx. 500KB</div>
       </div>
-      <div id="fatura-setup-msg" style="display:none;margin-top:6px;padding:8px;background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:7px;font-size:11px;color:var(--yellow);">
-        ⚙️ <strong>Configuração necessária:</strong> Acesse o Cloudinary e crie um Upload Preset chamado <strong>basecor_unsigned</strong> como "Unsigned".
-      </div>
+
       <div class="progress-bar" id="fatura-progress-bar"><div class="progress-fill" id="fatura-progress-fill"></div></div>
       <div id="fatura-preview"></div>
       <input type="hidden" id="bill-fatura-url"><input type="hidden" id="bill-fatura-url-name">
@@ -411,11 +408,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <input type="file" id="baixa-comp-file" accept=".pdf,.jpg,.jpeg,.png">
         <div class="upload-icon">🧾</div>
         <div class="upload-text">Clique ou arraste o comprovante aqui</div>
-        <div class="upload-sub">PDF, JPG ou PNG • Máx. 10MB</div>
+        <div class="upload-sub">PDF, JPG ou PNG • Máx. 500KB</div>
       </div>
-      <div id="comp-setup-msg" style="display:none;margin-top:6px;padding:8px;background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:7px;font-size:11px;color:var(--yellow);">
-        ⚙️ <strong>Configuração necessária:</strong> Crie o Upload Preset no Cloudinary.
-      </div>
+
       <div class="progress-bar" id="comp-progress-bar"><div class="progress-fill" id="comp-progress-fill"></div></div>
       <div id="comp-preview"></div>
       <input type="hidden" id="baixa-comp-url"><input type="hidden" id="baixa-comp-url-name">
@@ -448,83 +443,56 @@ firebase.initializeApp({
 var auth = firebase.auth();
 var db = firebase.firestore();
 
-// ===== CLOUDINARY CONFIG =====
-var CLOUD_NAME = 'dzfoyapop';
-var UPLOAD_PRESET = 'basecor_unsigned';
+// ===== FILE UPLOAD SYSTEM (Base64) =====
+var MAX_FILE_SIZE = 500 * 1024; // 500KB
 
-// Create unsigned upload preset via API
-function initCloudinary(){
-  // We'll use unsigned uploads with a preset
-  // The preset needs to be created as unsigned in Cloudinary dashboard
+function readFileAsBase64(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(e){ resolve(e.target.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
-async function uploadToCloudinary(file, progressBarId, progressFillId, previewId, hiddenInputId, label){
+function processFile(file, progressBarId, progressFillId, previewId, hiddenInputId, label){
   var progressBar = el(progressBarId);
   var progressFill = el(progressFillId);
   var preview = el(previewId);
   var hiddenInput = el(hiddenInputId);
-  
-  progressBar.style.display = 'block';
-  progressFill.style.width = '0%';
+  var nameInput = el(hiddenInputId+'-name');
   preview.innerHTML = '';
-  
-  var formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('folder', 'basecor-financeiro');
-  // Use unique filename with timestamp to avoid conflicts
-  var uniqueName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-  formData.append('public_id', 'basecor-financeiro/' + uniqueName);
-  formData.append('use_filename', 'false');
-  
-  return new Promise(function(resolve, reject){
-    var xhr = new XMLHttpRequest();
-    var resourceType = file.type === 'application/pdf' ? 'raw' : 'image';
-  xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/' + resourceType + '/upload');
-    
-    xhr.upload.onprogress = function(e){
-      if(e.lengthComputable){
-        var pct = Math.round((e.loaded/e.total)*100);
-        progressFill.style.width = pct + '%';
-      }
-    };
-    
-    xhr.onload = function(){
-      if(xhr.status === 200){
-        var result = JSON.parse(xhr.responseText);
-        // Store the URL - fix for PDFs: save as raw URL
-  var fileUrl = result.secure_url;
-  if(file.type === 'application/pdf'){
-    fileUrl = fileUrl.replace('/image/upload/','/raw/upload/');
+  hiddenInput.value = '';
+  if(nameInput) nameInput.value = '';
+  if(file.size > MAX_FILE_SIZE){
+    showToast('❌ Arquivo muito grande! Máx. 500KB.', 'error');
+    return;
   }
-  hiddenInput.value = fileUrl;
-        progressBar.style.display = 'none';
-        // Show preview
-        var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
-        // Store filename in hidden field alongside URL
-        var nameFieldId = hiddenInputId + '-name';
-        var nameField = document.getElementById(nameFieldId);
-        if(nameField) nameField.value = file.name;
-        preview.innerHTML = '<div class="file-preview"><span class="file-preview-icon">'+icon+'</span><span class="file-preview-name">'+file.name+'</span><span class="file-preview-remove" onclick="clearFile(\''+hiddenInputId+'\',\''+previewId+'\')">✕</span></div>';
-        showToast('✅ '+label+' enviado!', 'success');
-        resolve(result.secure_url);
-      } else {
-        var err = JSON.parse(xhr.responseText);
-        progressBar.style.display = 'none';
-        // If preset doesn't exist, try to create it
-        if(err.error && err.error.message && (err.error.message.includes('preset') || err.error.message.includes('Upload preset'))){
-          var setupMsgs = document.querySelectorAll('#fatura-setup-msg, #comp-setup-msg');
-          setupMsgs.forEach(function(m){m.style.display='block';});
-          showToast('⚙️ Configure o Upload Preset no Cloudinary', 'error');
-        } else {
-          showToast('❌ Erro no upload: ' + (err.error ? err.error.message : 'Tente novamente'), 'error');
-        }
-        reject(err);
-      }
-    };
-    xhr.onerror = function(){ reject(new Error('Erro de rede')); };
-    xhr.send(formData);
+  progressBar.style.display = 'block';
+  progressFill.style.width = '30%';
+  readFileAsBase64(file).then(function(base64){
+    progressFill.style.width = '100%';
+    setTimeout(function(){progressBar.style.display='none';},500);
+    hiddenInput.value = base64;
+    if(nameInput) nameInput.value = file.name;
+    var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
+    preview.innerHTML = '<div class="file-preview"><span class="file-preview-icon">'+icon+'</span><span class="file-preview-name">'+file.name+'</span><span class="file-preview-remove" onclick="clearFile(\''+hiddenInputId+'\',\''+previewId+'\')">✕</span></div>';
+    showToast('✅ '+label+' carregado!', 'success');
+  }).catch(function(){
+    progressBar.style.display = 'none';
+    showToast('❌ Erro ao carregar arquivo', 'error');
   });
+}
+
+function openBase64File(base64Data, fileName){
+  if(!base64Data){showToast('❌ Arquivo não encontrado','error');return;}
+  var win = window.open('','_blank');
+  if(!win){showToast('❌ Permita pop-ups para abrir o arquivo','error');return;}
+  if(base64Data.indexOf('data:application/pdf') === 0){
+    win.document.write('<html><head><title>'+(fileName||'Arquivo')+'</title></head><body style="margin:0"><embed src="'+base64Data+'" type="application/pdf" width="100%" height="100%"/></body></html>');
+  } else {
+    win.document.write('<html><head><title>'+(fileName||'Arquivo')+'</title></head><body style="margin:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+base64Data+'" style="max-width:100%;max-height:100vh"/></body></html>');
+  }
 }
 
 function clearFile(hiddenInputId, previewId){
@@ -746,10 +714,10 @@ function wireEvents(){
   el('btn-add-cat').addEventListener('click',addCat);
   // File upload events
   el('bill-fatura-file').addEventListener('change',function(){
-    if(this.files[0]) uploadToCloudinary(this.files[0],'fatura-progress-bar','fatura-progress-fill','fatura-preview','bill-fatura-url','Fatura');
+    if(this.files[0]) processFile(this.files[0],'fatura-progress-bar','fatura-progress-fill','fatura-preview','bill-fatura-url','Fatura');
   });
   el('baixa-comp-file').addEventListener('change',function(){
-    if(this.files[0]) uploadToCloudinary(this.files[0],'comp-progress-bar','comp-progress-fill','comp-preview','baixa-comp-url','Comprovante');
+    if(this.files[0]) processFile(this.files[0],'comp-progress-bar','comp-progress-fill','comp-preview','baixa-comp-url','Comprovante');
   });
   // ESC
   document.addEventListener('keydown',function(e){
@@ -1034,23 +1002,13 @@ function renderBillsTable(){
     // Botão fatura
     if(b.faturaLink){var bf=document.createElement('button');bf.className='btn-act';bf.style.cssText='background:#eff6ff;color:#2563eb;';bf.textContent='📄';
       bf.title='Ver: '+(b.faturaName||'Fatura');
-      (function(link){bf.addEventListener('click',function(){
-        var fixedLink=link;
-        if(link.indexOf('.pdf')>-1||link.indexOf('raw')>-1){
-          fixedLink=link.replace('/image/upload/','/raw/upload/');
-        }
-        window.open(fixedLink,'_blank');
-      });})(b.faturaLink);ra.appendChild(bf);}
+      (function(data,name){bf.addEventListener('click',function(){ openBase64File(data,name); });})(b.faturaLink,b.faturaName||'Fatura');
+      ra.appendChild(bf);}
     // Botão comprovante
     if(b.compLink){var bc=document.createElement('button');bc.className='btn-act';bc.style.cssText='background:#f0fdf4;color:#16a34a;';bc.textContent='🧾';
       bc.title='Ver: '+(b.compName||'Comprovante');
-      (function(link){bc.addEventListener('click',function(){
-        var fixedLink=link;
-        if(link.indexOf('.pdf')>-1||link.indexOf('raw')>-1){
-          fixedLink=link.replace('/image/upload/','/raw/upload/');
-        }
-        window.open(fixedLink,'_blank');
-      });})(b.compLink);ra.appendChild(bc);}
+      (function(data,name){bc.addEventListener('click',function(){ openBase64File(data,name); });})(b.compLink,b.compName||'Comprovante');
+      ra.appendChild(bc);}
     // Botão baixa ou desfazer
     if(!b.paid){var b1=document.createElement('button');b1.className='btn-act pay';b1.textContent='✅';b1.title='Dar Baixa';(function(fid){b1.addEventListener('click',function(){openBaixaModal(fid);});})(b.fid);ra.appendChild(b1);}
     else{var b1=document.createElement('button');b1.className='btn-act undo';b1.textContent='↩️';b1.title='Desfazer Baixa';(function(fid){b1.addEventListener('click',function(){undoBaixa(fid);});})(b.fid);ra.appendChild(b1);}
