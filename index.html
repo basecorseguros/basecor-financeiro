@@ -1014,27 +1014,38 @@ window.renderBillsTable = () => {
   list.sort((a,b)=>a.due>b.due?1:-1);
   const el=document.getElementById('bills-body');
   if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Nenhuma conta encontrada</div></div>';return;}
-  el.innerHTML=list.map(b=>{
+  const rows = list.map(b=>{
     const st=billStatus(b); const c=getCat(b.cat);
     const stColors={'aberto':'var(--yellow)','vencido':'var(--red)','pago':'var(--green)','recebido':'var(--green)'};
     const stLabels={'aberto':'Em Aberto','vencido':'Vencido','pago':'Pago','recebido':'Recebido'};
     const dt=daysText(b);
     const dtCol=st==='vencido'?'var(--red)':st==='aberto'?'var(--yellow)':'var(--green)';
-    return '<div class="bills-table-row '+(b.paid?'pago':'')+'">'+
+    return {fid:b.fid,type:b.type,paid:b.paid,html:
+      '<div class="bills-table-row '+(b.paid?'pago':'')+'" id="brow-'+b.fid+'">'+
       '<div><div style="font-size:12px;font-weight:600;">'+b.desc+'</div><div style="font-size:10px;color:'+dtCol+';font-family:DM Mono,monospace;">'+dt+'</div></div>'+
       '<div style="font-size:11px;font-family:DM Mono,monospace;">'+fmtD(b.due)+'</div>'+
       '<div class="col-cat"><span class="badge '+(b.type==='payable'?'expense':'income')+'">'+c.name+'</span></div>'+
       '<div class="col-acct"><span class="badge '+(b.account||'pj')+'">'+(b.account==='pf'?'PF':'PJ')+'</span></div>'+
       '<div style="font-size:12px;font-weight:700;font-family:DM Mono,monospace;color:'+(b.type==='payable'?'var(--red)':'var(--green)')+';">'+fmt(b.amount)+'</div>'+
       '<div style="font-size:10px;font-weight:700;color:'+stColors[st]+'">'+stLabels[st]+'</div>'+
-      '<div class="row-actions">'+
-        (!b.paid?'<button class="btn-act pay" onclick="openBaixaModal(''+b.fid+'')" title="Dar Baixa">✅</button>':
-                 '<button class="btn-act" style="background:var(--yellow-dim);color:var(--yellow);" onclick="undoBaixa(''+b.fid+'')" title="Desfazer Baixa">↩️</button>')+
-        '<button class="btn-act edit" onclick="openBillModal(''+b.type+'',''+b.fid+'')" title="Editar">✏️</button>'+
-        '<button class="btn-act del" onclick="deleteBill(''+b.fid+'')" title="Excluir">🗑</button>'+
-      '</div>'+
-    '</div>';
-  }).join('');
+      '<div class="row-actions" id="bra-'+b.fid+'"></div>'+
+    '</div>'};
+  });
+  el.innerHTML=rows.map(r=>r.html).join('');
+  rows.forEach(r=>{
+    const ra=document.getElementById('bra-'+r.fid); if(!ra)return;
+    if(!r.paid){
+      const b1=document.createElement('button');b1.className='btn-act pay';b1.title='Dar Baixa';b1.textContent='✅';
+      b1.addEventListener('click',()=>openBaixaModal(r.fid));ra.appendChild(b1);
+    } else {
+      const b1=document.createElement('button');b1.className='btn-act';b1.style.cssText='background:var(--yellow-dim);color:var(--yellow);';b1.title='Desfazer';b1.textContent='↩️';
+      b1.addEventListener('click',()=>undoBaixa(r.fid));ra.appendChild(b1);
+    }
+    const b2=document.createElement('button');b2.className='btn-act edit';b2.title='Editar';b2.textContent='✏️';
+    b2.addEventListener('click',()=>openBillModal(r.type,r.fid));ra.appendChild(b2);
+    const b3=document.createElement('button');b3.className='btn-act del';b3.title='Excluir';b3.textContent='🗑';
+    b3.addEventListener('click',()=>deleteBill(r.fid));ra.appendChild(b3);
+  });
 };
 
 window.renderTxTable = () => {
@@ -1056,7 +1067,15 @@ window.renderTxTable = () => {
   if(sto) list=list.filter(t=>t.date<=sto);
   const el=document.getElementById('tx-body');
   if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum lançamento encontrado</div></div>';return;}
-  el.innerHTML=list.map(t=>{const c=getCat(t.cat);const bg=t.type==='income'?'var(--green-dim)':'var(--red-dim)';return '<div class="tx-table-row"><div style="display:flex;align-items:center;gap:7px;"><div class="tx-icon" style="background:'+bg+';width:26px;height:26px;font-size:11px;">'+c.icon+'</div><div><div style="font-size:12px;font-weight:600;">'+t.desc+'</div>'+(t.obs?'<div style="font-size:10px;color:var(--text3)">'+t.obs+'</div>':'')+' </div></div><div class="col-cat"><span class="badge '+(t.type==='income'?'income':'expense')+'">'+c.name+'</span></div><div class="col-acct"><span class="badge '+(t.account||'pj')+'">'+(t.account==='pf'?'PF':'PJ')+'</span></div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;">'+fmtD(t.date)+'</div><div class="tx-amount '+t.type+'">'+(t.type==='income'?'+':'-')+fmt(t.amount)+'</div><div class="row-actions no-print"><button class="btn-act edit" onclick="openTxModal(''+t.type+'',''+t.fid+'')" title="Editar">✏️</button><button class="btn-act del" onclick="deleteTx(''+t.fid+'')" title="Excluir">🗑</button></div></div>';}).join('');
+  const txrows=list.map(t=>{const c=getCat(t.cat);const bg=t.type==='income'?'var(--green-dim)':'var(--red-dim)';return {fid:t.fid,type:t.type,html:'<div class="tx-table-row" id="tr-'+t.fid+'"><div style="display:flex;align-items:center;gap:7px;"><div class="tx-icon" style="background:'+bg+';width:26px;height:26px;font-size:11px;">'+c.icon+'</div><div><div style="font-size:12px;font-weight:600;">'+t.desc+'</div>'+(t.obs?'<div style="font-size:10px;color:var(--text3)">'+t.obs+'</div>':'')+' </div></div><div class="col-cat"><span class="badge '+(t.type==='income'?'income':'expense')+'">'+c.name+'</span></div><div class="col-acct"><span class="badge '+(t.account||'pj')+'">'+(t.account==='pf'?'PF':'PJ')+'</span></div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;">'+fmtD(t.date)+'</div><div class="tx-amount '+t.type+'">'+(t.type==='income'?'+':'-')+fmt(t.amount)+'</div><div class="row-actions no-print" id="tra-'+t.fid+'"></div></div>'};});
+  el.innerHTML=txrows.map(r=>r.html).join('');
+  txrows.forEach(r=>{
+    const ra=document.getElementById('tra-'+r.fid);if(!ra)return;
+    const b1=document.createElement('button');b1.className='btn-act edit';b1.textContent='✏️';b1.title='Editar';
+    b1.addEventListener('click',()=>openTxModal(r.type,r.fid));ra.appendChild(b1);
+    const b2=document.createElement('button');b2.className='btn-act del';b2.textContent='🗑';b2.title='Excluir';
+    b2.addEventListener('click',()=>deleteTx(r.fid));ra.appendChild(b2);
+  });
 };
 
 function renderCatBars(tx){
