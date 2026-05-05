@@ -475,7 +475,9 @@ async function uploadToCloudinary(file, progressBarId, progressFillId, previewId
   
   return new Promise(function(resolve, reject){
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/auto/upload');
+    // Use 'raw' for PDFs, 'image' for images
+  var resourceType = file.type === 'application/pdf' ? 'raw' : 'image';
+  xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/' + resourceType + '/upload');
     
     xhr.upload.onprogress = function(e){
       if(e.lengthComputable){
@@ -487,7 +489,9 @@ async function uploadToCloudinary(file, progressBarId, progressFillId, previewId
     xhr.onload = function(){
       if(xhr.status === 200){
         var result = JSON.parse(xhr.responseText);
-        hiddenInput.value = result.secure_url;
+        // Store the URL - for PDFs use raw URL which opens in browser
+  var fileUrl = result.secure_url;
+  hiddenInput.value = fileUrl;
         progressBar.style.display = 'none';
         // Show preview
         var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
