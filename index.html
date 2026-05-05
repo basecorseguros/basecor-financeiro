@@ -844,9 +844,10 @@ function renderAll(){
   document.getElementById('st-balance-pct').textContent=income>0?(((balance/income)*100).toFixed(1)+'% de economia'):'—';
 
   // Bills due in 7 days
-  const today7=new Date(); today7.setDate(today7.getDate()+7);
-  const dueSoon=bills.filter(b=>!b.paid&&b.type==='payable');
-    const d=new Date(b.due+'T00:00:00'); return d<=today7;
+  
+  const today7d=new Date(); today7d.setDate(today7d.getDate()+7);
+  const dueSoon=bills.filter(b=>{
+    if(!b.paid&&b.type==='payable'){const d=new Date(b.due+'T00:00:00');return d<=today7d;}return false;
   });
   const dueSoonTotal=dueSoon.reduce((s,b)=>s+b.amount,0);
   document.getElementById('st-bills-due').textContent=fmt(dueSoonTotal);
