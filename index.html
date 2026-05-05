@@ -393,7 +393,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="progress-bar" id="fatura-progress-bar"><div class="progress-fill" id="fatura-progress-fill"></div></div>
       <div id="fatura-preview"></div>
-      <input type="hidden" id="bill-fatura-url">
+      <input type="hidden" id="bill-fatura-url"><input type="hidden" id="bill-fatura-url-name">
     </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="bill-cancel-btn">Cancelar</button><button class="btn btn-primary" id="bill-save-btn">Salvar</button></div>
   </div>
@@ -418,7 +418,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="progress-bar" id="comp-progress-bar"><div class="progress-fill" id="comp-progress-fill"></div></div>
       <div id="comp-preview"></div>
-      <input type="hidden" id="baixa-comp-url">
+      <input type="hidden" id="baixa-comp-url"><input type="hidden" id="baixa-comp-url-name">
     </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="baixa-cancel-btn">Cancelar</button><button class="btn btn-success" id="baixa-confirm-btn">✅ Confirmar Baixa</button></div>
   </div>
@@ -472,11 +472,14 @@ async function uploadToCloudinary(file, progressBarId, progressFillId, previewId
   formData.append('file', file);
   formData.append('upload_preset', UPLOAD_PRESET);
   formData.append('folder', 'basecor-financeiro');
+  // Use unique filename with timestamp to avoid conflicts
+  var uniqueName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  formData.append('public_id', 'basecor-financeiro/' + uniqueName);
+  formData.append('use_filename', 'false');
   
   return new Promise(function(resolve, reject){
     var xhr = new XMLHttpRequest();
-    // Use 'raw' for PDFs, 'image' for images
-  var resourceType = file.type === 'application/pdf' ? 'raw' : 'image';
+    var resourceType = file.type === 'application/pdf' ? 'raw' : 'image';
   xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/' + resourceType + '/upload');
     
     xhr.upload.onprogress = function(e){
@@ -498,6 +501,10 @@ async function uploadToCloudinary(file, progressBarId, progressFillId, previewId
         progressBar.style.display = 'none';
         // Show preview
         var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
+        // Store filename in hidden field alongside URL
+        var nameFieldId = hiddenInputId + '-name';
+        var nameField = document.getElementById(nameFieldId);
+        if(nameField) nameField.value = file.name;
         preview.innerHTML = '<div class="file-preview"><span class="file-preview-icon">'+icon+'</span><span class="file-preview-name">'+file.name+'</span><span class="file-preview-remove" onclick="clearFile(\''+hiddenInputId+'\',\''+previewId+'\')">✕</span></div>';
         showToast('✅ '+label+' enviado!', 'success');
         resolve(result.secure_url);
@@ -859,7 +866,8 @@ function saveBill(){
   if(!due){showToast('⚠️ Informe a data de vencimento!','error');return;}
   sync('sync');
   var faturaUrl=val('bill-fatura-url').trim();
-  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaUrl};
+  var faturaName=val('bill-fatura-url-name').trim()||'Fatura';
+  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaUrl,faturaName:faturaName};
   var p=billEditId?db.collection('bills').doc(billEditId).update(data):db.collection('bills').add(Object.assign({},data,{paid:false,createdAt:new Date().toISOString()}));
   p.then(function(){closeBillModal();showToast('✅ '+(billEditId?'Conta atualizada!':'Conta registrada!'),'success');})
    .catch(function(){showToast('❌ Erro ao salvar!','error');});
@@ -880,7 +888,8 @@ function confirmBaixa(){
   var date=val('baixa-date'),amount=parseFloat(val('baixa-amount')),obs=val('baixa-obs').trim();
   sync('sync');
   var compUrl=val('baixa-comp-url').trim();
-  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compUrl})
+  var compName=val('baixa-comp-url-name').trim()||'Comprovante';
+  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compUrl,compName:compName})
     .then(function(){closeBaixaModal();showToast('✅ Baixa realizada!','success');})
     .catch(function(){showToast('❌ Erro!','error');});
 }
@@ -1023,17 +1032,23 @@ function renderBillsTable(){
       '<div class="row-actions"></div>';
     var ra=row.querySelector('.row-actions');
     // Botão fatura
-    if(b.faturaLink){var bf=document.createElement('button');bf.className='btn-act';bf.style.cssText='background:#eff6ff;color:#2563eb;';bf.textContent='📄';bf.title='Ver Fatura/Boleto';
+    if(b.faturaLink){var bf=document.createElement('button');bf.className='btn-act';bf.style.cssText='background:#eff6ff;color:#2563eb;';bf.textContent='📄';
+      bf.title='Ver: '+(b.faturaName||'Fatura');
       (function(link){bf.addEventListener('click',function(){
-        // Fix Cloudinary URL for PDFs - replace /image/upload/ with /raw/upload/
-        var fixedLink = link.replace('/image/upload/','/raw/upload/');
+        var fixedLink=link;
+        if(link.indexOf('.pdf')>-1||link.indexOf('raw')>-1){
+          fixedLink=link.replace('/image/upload/','/raw/upload/');
+        }
         window.open(fixedLink,'_blank');
       });})(b.faturaLink);ra.appendChild(bf);}
     // Botão comprovante
-    if(b.compLink){var bc=document.createElement('button');bc.className='btn-act';bc.style.cssText='background:#f0fdf4;color:#16a34a;';bc.textContent='🧾';bc.title='Ver Comprovante';
+    if(b.compLink){var bc=document.createElement('button');bc.className='btn-act';bc.style.cssText='background:#f0fdf4;color:#16a34a;';bc.textContent='🧾';
+      bc.title='Ver: '+(b.compName||'Comprovante');
       (function(link){bc.addEventListener('click',function(){
-        // Fix Cloudinary URL for PDFs
-        var fixedLink = link.replace('/image/upload/','/raw/upload/');
+        var fixedLink=link;
+        if(link.indexOf('.pdf')>-1||link.indexOf('raw')>-1){
+          fixedLink=link.replace('/image/upload/','/raw/upload/');
+        }
         window.open(fixedLink,'_blank');
       });})(b.compLink);ra.appendChild(bc);}
     // Botão baixa ou desfazer
