@@ -877,9 +877,9 @@ function renderUpcomingBills(){
   el.innerHTML=upcoming.map(b=>{
     const status=getBillStatus(b.due,b.paid);
     const days=daysUntilDue(b.due);
-    const daysText=days<0?`Venceu há ${Math.abs(days)} dia(s)`:days===0?'Vence hoje!':`Vence em ${days} dia(s)\`;
+    const daysText=days<0?('Venceu há '+Math.abs(days)+' dia(s)'):days===0?'Vence hoje!':('Vence em '+days+' dia(s)');
     const c=getCat(b.cat);
-    return`<div class="tx-item"><div class="bill-status ${status}"></div><div class="tx-info"><div class="tx-name">${b.desc}</div><div class="tx-meta bill-due ${status}">${daysText} · ${fmtDate(b.due)}</div></div><div class="tx-amount ${b.type==='payable'?'expense':'income'}">${fmt(b.amount)}</div></div>`;
+    return '<div class="tx-item"><div class="bill-status '+status+'"></div><div class="tx-info"><div class="tx-name">'+b.desc+'</div><div class="tx-meta bill-due '+status+'">'+daysText+' · '+fmtDate(b.due)+'</div></div><div class="tx-amount '+(b.type==="payable"?"expense":"income")+'">'+fmt(b.amount)+'</div></div>';
   }).join('');
 }
 
@@ -898,8 +898,8 @@ function renderBills(){
     el.innerHTML=items.sort((a,b)=>a.due>b.due?1:-1).map(b=>{
       const status=getBillStatus(b.due,b.paid);
       const days=daysUntilDue(b.due);
-      const daysText=b.paid?'Pago em '+fmtDate(b.paidAt||b.due):days<0?`⚠️ Venceu há ${Math.abs(days)}d`:days===0?'⚡ Vence hoje':`📅 Vence em ${days}d\`;
-      return`<div class="bill-item"><div class="bill-status ${status}"></div><div class="bill-info"><div class="bill-name">${b.desc}</div><div class="bill-due ${status}">${daysText} · ${fmtDate(b.due)}</div></div><div class="bill-amount ${b.type==='payable'?'payable':'receivable'}">${fmt(b.amount)}</div><div class="bill-actions">${!b.paid?`<button class="btn-sm btn-check" onclick="markBillPaid('${b.fireId}')" title="Marcar pago">✓</button>`:''}<button class="btn-sm btn-edit" onclick="openEditBillModal('${b.fireId}')" title="Editar">✏️</button><button class="btn-sm btn-del" onclick="deleteBill('${b.fireId}')" title="Excluir">🗑</button></div></div>`;
+      const daysText=b.paid?'Pago em '+fmtDate(b.paidAt||b.due):days<0?('⚠️ Venceu há '+Math.abs(days)+'d'):days===0?'⚡ Vence hoje':('📅 Vence em '+days+'d');
+      return '<div class="bill-item"><div class="bill-status '+status+'"></div><div class="bill-info"><div class="bill-name">'+b.desc+'</div><div class="bill-due '+status+'">'+daysText+' · '+fmtDate(b.due)+'</div></div><div class="bill-amount '+(b.type==="payable"?"payable":"receivable")+'">'+fmt(b.amount)+'</div><div class="bill-actions">'+(!b.paid?'<button class="btn-sm btn-check" onclick="markBillPaid(\''+b.fireId+'\')" title="Marcar pago">✓</button>':'')+'<button class="btn-sm btn-edit" onclick="openEditBillModal(\''+b.fireId+'\')" title="Editar">✏️</button><button class="btn-sm btn-del" onclick="deleteBill(\''+b.fireId+'\')" title="Excluir">🗑</button></div></div>';
     }).join('');
   };
   renderBillList(payable,'bills-payable');renderBillList(receivable,'bills-receivable');
