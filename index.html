@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<!-- Basecor v4.1 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Basecor — Sistema Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -288,7 +291,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="login-sub">🔒 Acesso seguro · Firebase</div>
     <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="field"><label>Senha</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar no Sistema</button>
+    <button class="login-btn" id="login-btn">Entrar no Sistema</button>
     <div class="login-err" id="login-err">❌ E-mail ou senha incorretos.</div>
   </div>
 </div>
@@ -1225,6 +1228,23 @@ function drawGroupBars(ctx,labels,datasets,colors,names){
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeTxModal();closeBillModal();closeBaixaModal();closeBankModal();}});
 window.addEventListener('resize',()=>{if(document.getElementById('app').style.display!=='none')renderAll();});
+</script>
+<script>
+// Wire up login button after page loads
+document.addEventListener('DOMContentLoaded', function() {
+  var loginBtn = document.getElementById('login-btn');
+  if(loginBtn) {
+    loginBtn.addEventListener('click', function() {
+      if(typeof window.doLogin === 'function') window.doLogin();
+    });
+  }
+  var loginPw = document.getElementById('login-pw');
+  if(loginPw) {
+    loginPw.addEventListener('keydown', function(e) {
+      if(e.key === 'Enter' && typeof window.doLogin === 'function') window.doLogin();
+    });
+  }
+});
 </script>
 </body>
 </html>
