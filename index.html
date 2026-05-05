@@ -269,6 +269,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <!-- APP -->
 <div id="app" style="display:none;">
+<div id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').style.display='none';" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;"></div>
 <div style="display:flex;min-height:100vh;">
 <aside class="sidebar" id="sidebar">
   <div class="logo-wrap">
@@ -319,7 +320,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 <div class="main">
   <header class="topbar">
     <div style="display:flex;align-items:center;gap:10px;">
-      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <button class="menu-toggle" onclick="
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
       <div>
@@ -681,7 +687,7 @@ window.navigate = function(view, el){
   document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
   if(el)el.classList.add('active');
   else{const items={dashboard:0,transactions:1,bills:2,banks:3,reports:4,categories:5};document.querySelectorAll('.nav-item')[items[view]]?.classList.add('active');}
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').style.display='none';
   document.getElementById('view-'+view).classList.add('active');
   const titles={dashboard:['Dashboard',''],transactions:['Lançamentos','Histórico completo'],bills:['Contas a Pagar/Receber','Gestão de vencimentos'],banks:['Saldos Bancários','Itaú PF · Santander PF · Santander PJ'],reports:['Relatórios','Análise e impressão'],categories:['Categorias','']};
   document.getElementById('page-title').textContent=titles[view][0];
