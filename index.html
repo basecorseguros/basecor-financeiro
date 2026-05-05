@@ -361,6 +361,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field-row"><div class="field"><label>Valor (R$)</label><input type="number" id="bill-amount" placeholder="0,00" min="0" step="0.01"></div><div class="field"><label>Vencimento</label><input type="date" id="bill-due"></div></div>
     <div class="field-row"><div class="field"><label>Categoria</label><select id="bill-cat"></select></div><div class="field"><label>Conta</label><select id="bill-acct"><option value="pj">PJ</option><option value="pf">PF</option></select></div></div>
     <div class="field"><label>Observação</label><input type="text" id="bill-obs" placeholder="Opcional..."></div>
+    <div class="field"><label>📄 Link do Boleto/Fatura (Google Drive)</label><input type="url" id="bill-fatura-link" placeholder="Cole aqui o link do Google Drive..."></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="bill-cancel-btn">Cancelar</button><button class="btn btn-primary" id="bill-save-btn">Salvar</button></div>
   </div>
 </div>
@@ -371,6 +372,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field"><label>Data da Baixa</label><input type="date" id="baixa-date"></div>
     <div class="field"><label>Valor Efetivo (R$)</label><input type="number" id="baixa-amount" step="0.01"></div>
     <div class="field"><label>Observação</label><input type="text" id="baixa-obs" placeholder="Ex: Pago via PIX..."></div>
+    <div class="field"><label>🧾 Link do Comprovante (Google Drive)</label><input type="url" id="baixa-comp-link" placeholder="Cole aqui o link do comprovante..."></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="baixa-cancel-btn">Cancelar</button><button class="btn btn-success" id="baixa-confirm-btn">✅ Confirmar Baixa</button></div>
   </div>
 </div>
@@ -696,7 +698,8 @@ function saveBill(){
   if(!amount||amount<=0){showToast('⚠️ Informe um valor válido!','error');return;}
   if(!due){showToast('⚠️ Informe a data de vencimento!','error');return;}
   sync('sync');
-  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct};
+  var faturaLink=val('bill-fatura-link').trim();
+  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaLink};
   var p=billEditId?db.collection('bills').doc(billEditId).update(data):db.collection('bills').add(Object.assign({},data,{paid:false,createdAt:new Date().toISOString()}));
   p.then(function(){closeBillModal();showToast('✅ '+(billEditId?'Conta atualizada!':'Conta registrada!'),'success');})
    .catch(function(){showToast('❌ Erro ao salvar!','error');});
@@ -708,7 +711,7 @@ function deleteBill(fid){
 function openBaixaModal(fid){
   baixaId=fid;
   var b=bills.find(function(x){return x.fid===fid;});if(!b)return;
-  el('baixa-date').value=today();el('baixa-amount').value=b.amount;el('baixa-obs').value='';
+  el('baixa-date').value=today();el('baixa-amount').value=b.amount;el('baixa-obs').value='';el('baixa-comp-link').value='';
   el('baixa-modal').classList.add('open');
 }
 function closeBaixaModal(){el('baixa-modal').classList.remove('open');baixaId=null;}
@@ -716,7 +719,8 @@ function confirmBaixa(){
   if(!baixaId)return;
   var date=val('baixa-date'),amount=parseFloat(val('baixa-amount')),obs=val('baixa-obs').trim();
   sync('sync');
-  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs})
+  var compLink=val('baixa-comp-link').trim();
+  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compLink})
     .then(function(){closeBaixaModal();showToast('✅ Baixa realizada!','success');})
     .catch(function(){showToast('❌ Erro!','error');});
 }
@@ -858,8 +862,13 @@ function renderBillsTable(){
       '<div style="font-size:10px;font-weight:700;color:'+stColors[st]+';">'+stLabels[st]+'</div>'+
       '<div class="row-actions"></div>';
     var ra=row.querySelector('.row-actions');
+    // Botão fatura
+    if(b.faturaLink){var bf=document.createElement('button');bf.className='btn-act';bf.style.cssText='background:#eff6ff;color:#2563eb;';bf.textContent='📄';bf.title='Ver Fatura/Boleto';(function(link){bf.addEventListener('click',function(){window.open(link,'_blank');});})(b.faturaLink);ra.appendChild(bf);}
+    // Botão comprovante
+    if(b.compLink){var bc=document.createElement('button');bc.className='btn-act';bc.style.cssText='background:#f0fdf4;color:#16a34a;';bc.textContent='🧾';bc.title='Ver Comprovante';(function(link){bc.addEventListener('click',function(){window.open(link,'_blank');});})(b.compLink);ra.appendChild(bc);}
+    // Botão baixa ou desfazer
     if(!b.paid){var b1=document.createElement('button');b1.className='btn-act pay';b1.textContent='✅';b1.title='Dar Baixa';(function(fid){b1.addEventListener('click',function(){openBaixaModal(fid);});})(b.fid);ra.appendChild(b1);}
-    else{var b1=document.createElement('button');b1.className='btn-act undo';b1.textContent='↩️';b1.title='Desfazer';(function(fid){b1.addEventListener('click',function(){undoBaixa(fid);});})(b.fid);ra.appendChild(b1);}
+    else{var b1=document.createElement('button');b1.className='btn-act undo';b1.textContent='↩️';b1.title='Desfazer Baixa';(function(fid){b1.addEventListener('click',function(){undoBaixa(fid);});})(b.fid);ra.appendChild(b1);}
     var b2=document.createElement('button');b2.className='btn-act edit';b2.textContent='✏️';b2.title='Editar';
     (function(btype,fid){b2.addEventListener('click',function(){openBillModal(btype,fid);});})(b.type,b.fid);ra.appendChild(b2);
     var b3=document.createElement('button');b3.className='btn-act del';b3.textContent='🗑';b3.title='Excluir';
