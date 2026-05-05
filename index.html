@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <style>
 :root{--orange:#f26522;--orange-light:#ff8a4c;--orange-dim:rgba(242,101,34,0.12);--bg:#f4f6fa;--surface:#fff;--surface3:#eef0f5;--border:#e2e6ef;--text:#1a1f2e;--text2:#5a6380;--text3:#9aa2b8;--green:#16a34a;--green-dim:rgba(22,163,74,0.1);--red:#dc2626;--red-dim:rgba(220,38,38,0.1);--blue:#2563eb;--blue-dim:rgba(37,99,235,0.1);--yellow:#d97706;--yellow-dim:rgba(217,119,6,0.12);--radius:14px;--radius-sm:9px;--shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.06);--shadow-lg:0 8px 32px rgba(0,0,0,0.14);}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -171,6 +172,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 @media(max-width:600px){.stats-grid{grid-template-columns:1fr;}.field-row{grid-template-columns:1fr;}}
 @media print{.sidebar,.topbar,.topbar-right,.btn,.row-actions,.filter-bar,.bills-filter,.no-print{display:none!important;}.main{margin-left:0;}.print-header{display:block!important;}body{background:#fff;}}
 .print-header{display:none;text-align:center;margin-bottom:18px;padding:16px;border-bottom:2px solid var(--orange);}
+.upload-area{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);position:relative;}
+.upload-area:hover{border-color:var(--orange);background:var(--orange-dim);}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-area .upload-icon{font-size:22px;margin-bottom:4px;}
+.upload-area .upload-text{font-size:12px;color:var(--text2);}
+.upload-area .upload-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.progress-bar{height:4px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:6px;display:none;}
+.progress-fill{height:100%;background:var(--orange);border-radius:3px;transition:width .3s;}
+.file-preview{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:6px;font-size:12px;}
+.file-preview-icon{font-size:18px;}
+.file-preview-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);}
+.file-preview-remove{cursor:pointer;color:var(--red);font-weight:700;padding:2px 6px;border-radius:4px;}
+.file-preview-remove:hover{background:var(--red-dim);}
+.btn-file{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;border:none;transition:all .15s;}
+.btn-file.boleto{background:#eff6ff;color:#2563eb;}
+.btn-file.boleto:hover{background:#2563eb;color:#fff;}
+.btn-file.comp{background:#f0fdf4;color:#16a34a;}
+.btn-file.comp:hover{background:#16a34a;color:#fff;}
 </style>
 </head>
 <body>
@@ -361,7 +380,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field-row"><div class="field"><label>Valor (R$)</label><input type="number" id="bill-amount" placeholder="0,00" min="0" step="0.01"></div><div class="field"><label>Vencimento</label><input type="date" id="bill-due"></div></div>
     <div class="field-row"><div class="field"><label>Categoria</label><select id="bill-cat"></select></div><div class="field"><label>Conta</label><select id="bill-acct"><option value="pj">PJ</option><option value="pf">PF</option></select></div></div>
     <div class="field"><label>Observação</label><input type="text" id="bill-obs" placeholder="Opcional..."></div>
-    <div class="field"><label>📄 Link do Boleto/Fatura (Google Drive)</label><input type="url" id="bill-fatura-link" placeholder="Cole aqui o link do Google Drive..."></div>
+    <div class="field">
+      <label>📄 Boleto / Fatura (PDF ou Imagem)</label>
+      <div class="upload-area" id="fatura-upload-area">
+        <input type="file" id="bill-fatura-file" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Clique ou arraste o arquivo aqui</div>
+        <div class="upload-sub">PDF, JPG ou PNG • Máx. 10MB</div>
+      </div>
+      <div id="fatura-setup-msg" style="display:none;margin-top:6px;padding:8px;background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:7px;font-size:11px;color:var(--yellow);">
+        ⚙️ <strong>Configuração necessária:</strong> Acesse o Cloudinary e crie um Upload Preset chamado <strong>basecor_unsigned</strong> como "Unsigned".
+      </div>
+      <div class="progress-bar" id="fatura-progress-bar"><div class="progress-fill" id="fatura-progress-fill"></div></div>
+      <div id="fatura-preview"></div>
+      <input type="hidden" id="bill-fatura-url">
+    </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="bill-cancel-btn">Cancelar</button><button class="btn btn-primary" id="bill-save-btn">Salvar</button></div>
   </div>
 </div>
@@ -372,7 +405,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field"><label>Data da Baixa</label><input type="date" id="baixa-date"></div>
     <div class="field"><label>Valor Efetivo (R$)</label><input type="number" id="baixa-amount" step="0.01"></div>
     <div class="field"><label>Observação</label><input type="text" id="baixa-obs" placeholder="Ex: Pago via PIX..."></div>
-    <div class="field"><label>🧾 Link do Comprovante (Google Drive)</label><input type="url" id="baixa-comp-link" placeholder="Cole aqui o link do comprovante..."></div>
+    <div class="field">
+      <label>🧾 Comprovante de Pagamento (PDF ou Imagem)</label>
+      <div class="upload-area" id="comp-upload-area">
+        <input type="file" id="baixa-comp-file" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="upload-icon">🧾</div>
+        <div class="upload-text">Clique ou arraste o comprovante aqui</div>
+        <div class="upload-sub">PDF, JPG ou PNG • Máx. 10MB</div>
+      </div>
+      <div id="comp-setup-msg" style="display:none;margin-top:6px;padding:8px;background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:7px;font-size:11px;color:var(--yellow);">
+        ⚙️ <strong>Configuração necessária:</strong> Crie o Upload Preset no Cloudinary.
+      </div>
+      <div class="progress-bar" id="comp-progress-bar"><div class="progress-fill" id="comp-progress-fill"></div></div>
+      <div id="comp-preview"></div>
+      <input type="hidden" id="baixa-comp-url">
+    </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="baixa-cancel-btn">Cancelar</button><button class="btn btn-success" id="baixa-confirm-btn">✅ Confirmar Baixa</button></div>
   </div>
 </div>
@@ -400,6 +447,105 @@ firebase.initializeApp({
 });
 var auth = firebase.auth();
 var db = firebase.firestore();
+
+// ===== CLOUDINARY CONFIG =====
+var CLOUD_NAME = 'dzfoyapop';
+var UPLOAD_PRESET = 'basecor_unsigned';
+
+// Create unsigned upload preset via API
+function initCloudinary(){
+  // We'll use unsigned uploads with a preset
+  // The preset needs to be created as unsigned in Cloudinary dashboard
+}
+
+async function uploadToCloudinary(file, progressBarId, progressFillId, previewId, hiddenInputId, label){
+  var progressBar = el(progressBarId);
+  var progressFill = el(progressFillId);
+  var preview = el(previewId);
+  var hiddenInput = el(hiddenInputId);
+  
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+  preview.innerHTML = '';
+  
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'basecor-financeiro');
+  
+  return new Promise(function(resolve, reject){
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/auto/upload');
+    
+    xhr.upload.onprogress = function(e){
+      if(e.lengthComputable){
+        var pct = Math.round((e.loaded/e.total)*100);
+        progressFill.style.width = pct + '%';
+      }
+    };
+    
+    xhr.onload = function(){
+      if(xhr.status === 200){
+        var result = JSON.parse(xhr.responseText);
+        hiddenInput.value = result.secure_url;
+        progressBar.style.display = 'none';
+        // Show preview
+        var icon = file.type === 'application/pdf' ? '📄' : '🖼️';
+        preview.innerHTML = '<div class="file-preview"><span class="file-preview-icon">'+icon+'</span><span class="file-preview-name">'+file.name+'</span><span class="file-preview-remove" onclick="clearFile(\''+hiddenInputId+'\',\''+previewId+'\')">✕</span></div>';
+        showToast('✅ '+label+' enviado!', 'success');
+        resolve(result.secure_url);
+      } else {
+        var err = JSON.parse(xhr.responseText);
+        progressBar.style.display = 'none';
+        // If preset doesn't exist, try to create it
+        if(err.error && err.error.message && (err.error.message.includes('preset') || err.error.message.includes('Upload preset'))){
+          var setupMsgs = document.querySelectorAll('#fatura-setup-msg, #comp-setup-msg');
+          setupMsgs.forEach(function(m){m.style.display='block';});
+          showToast('⚙️ Configure o Upload Preset no Cloudinary', 'error');
+        } else {
+          showToast('❌ Erro no upload: ' + (err.error ? err.error.message : 'Tente novamente'), 'error');
+        }
+        reject(err);
+      }
+    };
+    xhr.onerror = function(){ reject(new Error('Erro de rede')); };
+    xhr.send(formData);
+  });
+}
+
+function clearFile(hiddenInputId, previewId){
+  el(hiddenInputId).value = '';
+  el(previewId).innerHTML = '';
+}
+
+async function createUploadPreset(){
+  // Create unsigned preset via signed API call
+  var timestamp = Math.round(Date.now()/1000);
+  var params = 'folder=basecor-financeiro&name=basecor_unsigned&signing_algorithm=sha256&timestamp='+timestamp+'&unsigned=true';
+  
+  // Use signed request
+  var crypto = window.crypto || window.msCrypto;
+  var encoder = new TextEncoder();
+  var data = encoder.encode(params + 'kTtR_sodcKN7DgDfWveJuwMnATA');
+  var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  var hashArray = Array.from(new Uint8Array(hashBuffer));
+  var signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  var formData = new FormData();
+  formData.append('name', 'basecor_unsigned');
+  formData.append('unsigned', 'true');
+  formData.append('folder', 'basecor-financeiro');
+  formData.append('api_key', '915939822789375');
+  formData.append('timestamp', timestamp);
+  formData.append('signature', signature);
+  
+  try {
+    var resp = await fetch('https://api.cloudinary.com/v1_1/dzfoyapop/upload_presets', {
+      method: 'POST', body: formData
+    });
+    return await resp.json();
+  } catch(e) { return null; }
+}
 
 // ===== STATE =====
 var transactions=[], bills=[], categories=defaultCats();
@@ -584,6 +730,13 @@ function wireEvents(){
   el('btn-rpt-filter').addEventListener('click',renderReports);
   el('btn-print').addEventListener('click',printReport);
   el('btn-add-cat').addEventListener('click',addCat);
+  // File upload events
+  el('bill-fatura-file').addEventListener('change',function(){
+    if(this.files[0]) uploadToCloudinary(this.files[0],'fatura-progress-bar','fatura-progress-fill','fatura-preview','bill-fatura-url','Fatura');
+  });
+  el('baixa-comp-file').addEventListener('change',function(){
+    if(this.files[0]) uploadToCloudinary(this.files[0],'comp-progress-bar','comp-progress-fill','comp-preview','baixa-comp-url','Comprovante');
+  });
   // ESC
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){closeTxModal();closeBillModal();closeBaixaModal();closeBankModal();}
@@ -698,8 +851,8 @@ function saveBill(){
   if(!amount||amount<=0){showToast('⚠️ Informe um valor válido!','error');return;}
   if(!due){showToast('⚠️ Informe a data de vencimento!','error');return;}
   sync('sync');
-  var faturaLink=val('bill-fatura-link').trim();
-  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaLink};
+  var faturaUrl=val('bill-fatura-url').trim();
+  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaUrl};
   var p=billEditId?db.collection('bills').doc(billEditId).update(data):db.collection('bills').add(Object.assign({},data,{paid:false,createdAt:new Date().toISOString()}));
   p.then(function(){closeBillModal();showToast('✅ '+(billEditId?'Conta atualizada!':'Conta registrada!'),'success');})
    .catch(function(){showToast('❌ Erro ao salvar!','error');});
@@ -719,8 +872,8 @@ function confirmBaixa(){
   if(!baixaId)return;
   var date=val('baixa-date'),amount=parseFloat(val('baixa-amount')),obs=val('baixa-obs').trim();
   sync('sync');
-  var compLink=val('baixa-comp-link').trim();
-  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compLink})
+  var compUrl=val('baixa-comp-url').trim();
+  db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compUrl})
     .then(function(){closeBaixaModal();showToast('✅ Baixa realizada!','success');})
     .catch(function(){showToast('❌ Erro!','error');});
 }
