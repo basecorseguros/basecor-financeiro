@@ -239,6 +239,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
     <div class="topbar-right">
       <div class="acct-badge" id="acct-badge"><div class="acct-badge-dot" id="acct-dot" style="background:#1a1f2e"></div><span id="acct-badge-text">PJ — Basecor</span></div>
+      <button id="btn-ai" style="padding:7px 13px;border-radius:var(--radius-sm);font-family:Plus Jakarta Sans,sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;">🤖 IA</button>
       <button class="btn btn-ghost" id="btn-nova-saida">− Saída</button>
       <button class="btn btn-primary" id="btn-nova-entrada">+ Entrada</button>
     </div>
@@ -379,6 +380,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field-row"><div class="field"><label>Valor (R$)</label><input type="number" id="bill-amount" placeholder="0,00" min="0" step="0.01"></div><div class="field"><label>Vencimento</label><input type="date" id="bill-due"></div></div>
     <div class="field-row"><div class="field"><label>Categoria</label><select id="bill-cat"></select></div><div class="field"><label>Conta</label><select id="bill-acct"><option value="pj">PJ</option><option value="pf">PF</option></select></div></div>
     <div class="field"><label>Observação</label><input type="text" id="bill-obs" placeholder="Opcional..."></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;">🔄 RECORRÊNCIA E PARCELAMENTO</div>
+      <div class="field-row">
+        <div class="field" style="margin-bottom:0">
+          <label>Tipo de lançamento</label>
+          <select id="bill-recur-type" onchange="toggleRecurFields()">
+            <option value="once">Lançamento único</option>
+            <option value="recur">🔄 Recorrente (todo mês)</option>
+            <option value="installment">📦 Parcelado</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0" id="bill-installment-field" style="display:none">
+          <label>Número de parcelas</label>
+          <input type="number" id="bill-installments" placeholder="Ex: 10" min="2" max="360" value="2">
+        </div>
+      </div>
+      <div id="bill-recur-info" style="display:none;margin-top:8px;font-size:11px;color:var(--text3);padding:6px 8px;background:var(--surface);border-radius:6px;"></div>
+    </div>
     <div class="field">
       <label>📄 Boleto / Fatura (PDF ou Imagem)</label>
       <div class="upload-area" id="fatura-upload-area">
@@ -429,6 +448,36 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="ai-modal">
+  <div class="modal" style="width:520px;display:flex;flex-direction:column;max-height:85vh;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">🤖</div>
+        <div><div style="font-size:14px;font-weight:800;">Assistente Financeiro IA</div><div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;">Basecor · Powered by Claude AI</div></div>
+      </div>
+      <button id="ai-close-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);">✕</button>
+    </div>
+    <div id="ai-chat" style="flex:1;overflow-y:auto;padding:8px;background:var(--bg);border-radius:var(--radius-sm);min-height:260px;max-height:380px;display:flex;flex-direction:column;gap:4px;">
+      <div style="background:linear-gradient(135deg,#7c3aed15,#2563eb15);border:1px solid #7c3aed30;border-radius:10px;padding:12px;font-size:13px;">
+        <strong>🤖 Olá! Sou a IA Financeira da Basecor!</strong><br><br>
+        Posso te ajudar com análise de entradas e saídas, alertas de vencimento, previsão de fluxo de caixa e sugestões financeiras.<br><br>
+        <em style="font-size:11px;color:var(--text3);">Pergunte qualquer coisa sobre suas finanças!</em>
+      </div>
+    </div>
+    <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:5px;">
+      <button class="btn btn-ghost" onclick="askAI(this.textContent)" style="font-size:11px;padding:4px 8px;">💰 Quanto tenho disponível?</button>
+      <button class="btn btn-ghost" onclick="askAI(this.textContent)" style="font-size:11px;padding:4px 8px;">⚠️ Contas próximas do vencimento</button>
+      <button class="btn btn-ghost" onclick="askAI(this.textContent)" style="font-size:11px;padding:4px 8px;">📊 Como está meu fluxo de caixa?</button>
+      <button class="btn btn-ghost" onclick="askAI(this.textContent)" style="font-size:11px;padding:4px 8px;">💡 Onde posso economizar?</button>
+      <button class="btn btn-ghost" onclick="askAI(this.textContent)" style="font-size:11px;padding:4px 8px;">📈 Previsão dos próximos 30 dias</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="ai-input" placeholder="Pergunte sobre suas finanças..." style="flex:1;padding:10px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:Plus Jakarta Sans,sans-serif;font-size:13px;outline:none;">
+      <button id="ai-send-btn" onclick="sendAI()" style="padding:8px 16px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;border-radius:var(--radius-sm);font-family:Plus Jakarta Sans,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Enviar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ===== FIREBASE INIT (compat mode - no ES modules) =====
@@ -712,6 +761,10 @@ function wireEvents(){
   el('btn-rpt-filter').addEventListener('click',renderReports);
   el('btn-print').addEventListener('click',printReport);
   el('btn-add-cat').addEventListener('click',addCat);
+  el('btn-ai').addEventListener('click',function(){el('ai-modal').classList.add('open');});
+  el('ai-close-btn').addEventListener('click',function(){el('ai-modal').classList.remove('open');});
+  el('ai-modal').addEventListener('click',function(e){if(e.target===this)el('ai-modal').classList.remove('open');});
+  el('ai-input').addEventListener('keydown',function(e){if(e.key==='Enter')sendAI();});
   // File upload events
   el('bill-fatura-file').addEventListener('change',function(){
     if(this.files[0]) processFile(this.files[0],'fatura-progress-bar','fatura-progress-fill','fatura-preview','bill-fatura-url','Fatura');
@@ -835,10 +888,29 @@ function saveBill(){
   sync('sync');
   var faturaUrl=val('bill-fatura-url').trim();
   var faturaName=val('bill-fatura-url-name').trim()||'Fatura';
-  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaUrl,faturaName:faturaName};
-  var p=billEditId?db.collection('bills').doc(billEditId).update(data):db.collection('bills').add(Object.assign({},data,{paid:false,createdAt:new Date().toISOString()}));
-  p.then(function(){closeBillModal();showToast('✅ '+(billEditId?'Conta atualizada!':'Conta registrada!'),'success');})
-   .catch(function(){showToast('❌ Erro ao salvar!','error');});
+  var recurType=val('bill-recur-type')||'once';
+  var data={desc:desc,amount:amount,type:billType,due:due,cat:cat,obs:obs,account:acct,faturaLink:faturaUrl,faturaName:faturaName,recurType:recurType};
+  
+  if(billEditId){
+    db.collection('bills').doc(billEditId).update(data)
+      .then(function(){closeBillModal();showToast('✅ Conta atualizada!','success');})
+      .catch(function(){showToast('❌ Erro ao salvar!','error');});
+    return;
+  }
+  
+  if(recurType === 'installment'){
+    var count = parseInt(val('bill-installments'))||2;
+    if(count < 2 || count > 360){showToast('⚠️ Parcelas entre 2 e 360','error');return;}
+    createInstallments(Object.assign({},data,{paid:false}), count)
+      .then(function(){
+        closeBillModal();
+        showToast('✅ '+count+' parcelas criadas automaticamente!','success');
+      }).catch(function(){showToast('❌ Erro ao criar parcelas!','error');});
+  } else {
+    db.collection('bills').add(Object.assign({},data,{paid:false,createdAt:new Date().toISOString()}))
+      .then(function(){closeBillModal();showToast('✅ Conta registrada!','success');})
+      .catch(function(){showToast('❌ Erro ao salvar!','error');});
+  }
 }
 function deleteBill(fid){
   if(!confirm('Confirma exclusão?'))return;
@@ -858,7 +930,24 @@ function confirmBaixa(){
   var compUrl=val('baixa-comp-url').trim();
   var compName=val('baixa-comp-url-name').trim()||'Comprovante';
   db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compUrl,compName:compName})
-    .then(function(){closeBaixaModal();showToast('✅ Baixa realizada!','success');})
+    .then(function(){
+      closeBaixaModal();
+      showToast('✅ Baixa realizada!','success');
+      // Auto-create next recurrence if applicable
+      var paidBill = bills.find(function(b){return b.fid===baixaId;});
+      if(paidBill && paidBill.recurType === 'recur'){
+        // Check if next month already exists
+        var nextDue = addMonths(paidBill.due, 1);
+        var alreadyExists = bills.find(function(b){
+          return b.desc===paidBill.desc && b.due===nextDue && !b.paid;
+        });
+        if(!alreadyExists){
+          createNextRecurrence(paidBill).then(function(){
+            showToast('🔄 Próximo mês lançado automaticamente!','success');
+          });
+        }
+      }
+    })
     .catch(function(){showToast('❌ Erro!','error');});
 }
 function undoBaixa(fid){
@@ -905,6 +994,81 @@ function addCat(){
 function removeCat(id){
   categories=categories.filter(function(c){return c.id!==id;});
   renderAll();showToast('🗑️ Removida','success');
+}
+
+// ===== AI ASSISTANT =====
+function getFinancialContext(){
+  var inc=transactions.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
+  var exp=transactions.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  var pjI=transactions.filter(function(t){return t.account==='pj'&&t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
+  var pjE=transactions.filter(function(t){return t.account==='pj'&&t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  var pfI=transactions.filter(function(t){return t.account==='pf'&&t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
+  var pfE=transactions.filter(function(t){return t.account==='pf'&&t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  var now=new Date();now.setHours(0,0,0,0);
+  var due7=new Date();due7.setDate(due7.getDate()+7);
+  var overdue=bills.filter(function(b){return !b.paid&&new Date(b.due+'T00:00:00')<now;});
+  var upcoming=bills.filter(function(b){return !b.paid&&new Date(b.due+'T00:00:00')<=due7&&new Date(b.due+'T00:00:00')>=now;});
+  var cats={};transactions.filter(function(t){return t.type==='expense';}).forEach(function(t){cats[t.cat]=(cats[t.cat]||0)+t.amount;});
+  var topCats=Object.entries(cats).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+  return {
+    balance:inc-exp,totalIncome:inc,totalExpense:exp,
+    pjBalance:pjI-pjE,pfBalance:pfI-pfE,
+    overdueCount:overdue.length,overdueTotal:overdue.reduce(function(s,b){return s+b.amount;},0),
+    upcomingCount:upcoming.length,upcomingTotal:upcoming.reduce(function(s,b){return s+b.amount;},0),
+    payableOpen:bills.filter(function(b){return !b.paid&&b.type==='payable';}).reduce(function(s,b){return s+b.amount;},0),
+    receivableOpen:bills.filter(function(b){return !b.paid&&b.type==='receivable';}).reduce(function(s,b){return s+b.amount;},0),
+    recurrentCount:bills.filter(function(b){return b.recurType==='recur'&&!b.paid;}).length,
+    installmentsCount:bills.filter(function(b){return b.recurType==='installment'&&!b.paid;}).length,
+    topCategories:topCats.map(function(e){return getCat(e[0]).name+': R$'+e[1].toFixed(2);}),
+    banks:bankBalances
+  };
+}
+function addAIMessage(text,isUser){
+  var chat=el('ai-chat');var div=document.createElement('div');
+  div.style.cssText=isUser?'background:var(--orange-dim);border:1px solid var(--orange-glow);border-radius:10px;padding:10px 12px;font-size:13px;margin-left:20%;margin-bottom:4px;':'background:linear-gradient(135deg,#7c3aed15,#2563eb15);border:1px solid #7c3aed30;border-radius:10px;padding:10px 12px;font-size:13px;margin-right:20%;margin-bottom:4px;';
+  div.innerHTML=(isUser?'<strong>Você:</strong> ':'<strong>🤖 IA:</strong> ')+text.replace(/\n/g,'<br>');
+  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+}
+function addAILoading(){
+  var chat=el('ai-chat');var div=document.createElement('div');div.id='ai-loading';
+  div.style.cssText='background:linear-gradient(135deg,#7c3aed15,#2563eb15);border:1px solid #7c3aed30;border-radius:10px;padding:10px 12px;font-size:13px;margin-right:20%;margin-bottom:4px;';
+  div.innerHTML='<strong>🤖 IA:</strong> <span style="opacity:0.6">Analisando seus dados...</span>';
+  chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+}
+function removeAILoading(){var l=el('ai-loading');if(l)l.remove();}
+function askAI(q){el('ai-input').value=q;sendAI();}
+async function sendAI(){
+  var q=val('ai-input').trim();if(!q)return;
+  el('ai-input').value='';el('ai-send-btn').disabled=true;
+  addAIMessage(q,true);addAILoading();
+  var ctx=getFinancialContext();
+  var sys='Você é a Assistente Financeira IA da Basecor Corretora de Seguros. Responda em português, seja claro e objetivo. Use emojis com moderação.\n\nDADOS FINANCEIROS ATUAIS:\n'+
+    '- Saldo total: R$ '+ctx.balance.toFixed(2)+'\n'+
+    '- Entradas: R$ '+ctx.totalIncome.toFixed(2)+'\n'+
+    '- Saídas: R$ '+ctx.totalExpense.toFixed(2)+'\n'+
+    '- Saldo PJ Basecor: R$ '+ctx.pjBalance.toFixed(2)+'\n'+
+    '- Saldo PF Pessoal: R$ '+ctx.pfBalance.toFixed(2)+'\n'+
+    '- A pagar em aberto: R$ '+ctx.payableOpen.toFixed(2)+'\n'+
+    '- A receber em aberto: R$ '+ctx.receivableOpen.toFixed(2)+'\n'+
+    '- Contas vencidas: '+ctx.overdueCount+' (R$ '+ctx.overdueTotal.toFixed(2)+')\n'+
+    '- Vencendo em 7 dias: '+ctx.upcomingCount+' (R$ '+ctx.upcomingTotal.toFixed(2)+')\n'+
+    '- Recorrentes ativos: '+ctx.recurrentCount+'\n'+
+    '- Parcelas em aberto: '+ctx.installmentsCount+'\n'+
+    '- Itaú PF: R$ '+(ctx.banks['itau-pf']?ctx.banks['itau-pf'].balance:0).toFixed(2)+'\n'+
+    '- Santander PF: R$ '+(ctx.banks['sant-pf']?ctx.banks['sant-pf'].balance:0).toFixed(2)+'\n'+
+    '- Santander PJ: R$ '+(ctx.banks['sant-pj']?ctx.banks['sant-pj'].balance:0).toFixed(2)+'\n'+
+    '- Top categorias de gasto: '+ctx.topCategories.join(', ');
+  try{
+    var r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sys,messages:[{role:'user',content:q}]})
+    });
+    var d=await r.json();
+    removeAILoading();
+    var ans=d.content&&d.content[0]?d.content[0].text:'Não consegui processar. Tente novamente.';
+    addAIMessage(ans,false);
+  }catch(e){removeAILoading();addAIMessage('❌ Erro ao conectar com a IA. Verifique sua conexão.',false);}
+  el('ai-send-btn').disabled=false;
 }
 
 // ===== RENDER ALL =====
@@ -991,7 +1155,11 @@ function renderBillsTable(){
     var dtCol=st==='vencido'?'var(--red)':st==='aberto'?'var(--yellow)':'var(--green)';
     var row=document.createElement('div');
     row.className='tbl-row bills-cols'+(b.paid?' pago':'');
-    row.innerHTML='<div><div style="font-size:12px;font-weight:600;">'+b.desc+'</div><div style="font-size:10px;color:'+dtCol+';font-family:DM Mono,monospace;">'+dt+'</div></div>'+
+    row.innerHTML='<div>'+
+      '<div style="font-size:12px;font-weight:600;">'+b.desc+'</div>'+
+      (b.recurType==='recur'?'<span style="background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;">🔄 RECORRENTE</span> ':'')+
+      (b.recurType==='installment'&&b.installmentNum?'<span style="background:#dbeafe;color:#2563eb;padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;">📦 '+b.installmentNum+'/'+b.installmentTotal+'</span> ':'')+
+      '<div style="font-size:10px;color:'+dtCol+';font-family:DM Mono,monospace;">'+dt+'</div></div>'+
       '<div style="font-size:11px;font-family:DM Mono,monospace;">'+fmtD(b.due)+'</div>'+
       '<div class="col-cat"><span class="badge '+(b.type==='payable'?'expense':'income')+'">'+c.name+'</span></div>'+
       '<div class="col-acct"><span class="badge '+(b.account||'pj')+'">'+(b.account==='pf'?'PF':'PJ')+'</span></div>'+
