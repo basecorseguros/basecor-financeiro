@@ -222,6 +222,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="nav-item" id="nav-reports"><span>📊</span> Relatórios</div>
     <div class="nav-sep"></div>
     <div class="nav-label">Config</div>
+    <div class="nav-item" id="nav-cards"><span>💳</span> Cartões de Crédito</div>
     <div class="nav-item" id="nav-categories"><span>☰</span> Categorias</div>
   </nav>
   <div class="acct-section">
@@ -304,15 +305,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
     <div class="view" id="view-banks">
       <div class="grid-banks">
-        <div class="bank-card bank-itau"><div style="font-size:22px">🏦</div><div class="bank-name">Banco Itaú</div><div class="bank-type">Pessoa Física · PF</div><div class="bank-balance pos" id="itau-pf-bal">R$ 0,00</div><div class="bank-update" id="itau-pf-upd">Não atualizado</div><button class="btn btn-ghost" id="btn-bank-itau-pf" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
-        <div class="bank-card bank-sant"><div style="font-size:22px">🏦</div><div class="bank-name">Santander</div><div class="bank-type">Pessoa Física · PF</div><div class="bank-balance pos" id="sant-pf-bal">R$ 0,00</div><div class="bank-update" id="sant-pf-upd">Não atualizado</div><button class="btn btn-ghost" id="btn-bank-sant-pf" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
-        <div class="bank-card bank-sant"><div style="font-size:22px">🏦</div><div class="bank-name">Santander</div><div class="bank-type">Pessoa Jurídica · PJ</div><div class="bank-balance pos" id="sant-pj-bal">R$ 0,00</div><div class="bank-update" id="sant-pj-upd">Não atualizado</div><button class="btn btn-ghost" id="btn-bank-sant-pj" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
+        <div class="bank-card bank-itau"><div style="font-size:22px">🏦</div><div class="bank-name">Banco Itaú</div><div class="bank-type">Pessoa Física · PF</div><div class="bank-balance pos" id="itau-pf-bal">R$ 0,00</div><div class="bank-update" id="itau-pf-upd">Não atualizado</div><div id="itau-pf-limit"></div><button class="btn btn-ghost" id="btn-bank-itau-pf" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
+        <div class="bank-card bank-sant"><div style="font-size:22px">🏦</div><div class="bank-name">Santander</div><div class="bank-type">Pessoa Física · PF</div><div class="bank-balance pos" id="sant-pf-bal">R$ 0,00</div><div class="bank-update" id="sant-pf-upd">Não atualizado</div><div id="sant-pf-limit"></div><button class="btn btn-ghost" id="btn-bank-sant-pf" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
+        <div class="bank-card bank-sant"><div style="font-size:22px">🏦</div><div class="bank-name">Santander</div><div class="bank-type">Pessoa Jurídica · PJ</div><div class="bank-balance pos" id="sant-pj-bal">R$ 0,00</div><div class="bank-update" id="sant-pj-upd">Não atualizado</div><div id="sant-pj-limit"></div><button class="btn btn-ghost" id="btn-bank-sant-pj" style="margin-top:9px;font-size:11px;">✏️ Atualizar</button></div>
       </div>
       <div class="card"><div class="card-header"><div><div class="card-title">Total em Bancos</div></div></div>
         <div style="padding:0 14px 14px;">
-          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>🏦 Itaú PF</span><span class="stat-value green" style="font-size:14px;" id="itau-pf-sum">R$ 0,00</span></div>
-          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>🏦 Santander PF</span><span class="stat-value green" style="font-size:14px;" id="sant-pf-sum">R$ 0,00</span></div>
-          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>🏦 Santander PJ</span><span class="stat-value green" style="font-size:14px;" id="sant-pj-sum">R$ 0,00</span></div>
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+            <div style="display:flex;justify-content:space-between;"><span>🏦 Itaú PF</span><span class="stat-value green" style="font-size:14px;" id="itau-pf-sum">R$ 0,00</span></div>
+            <div style="font-size:11px;color:var(--text3);" id="itau-pf-avail"></div>
+          </div>
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+            <div style="display:flex;justify-content:space-between;"><span>🏦 Santander PF</span><span class="stat-value green" style="font-size:14px;" id="sant-pf-sum">R$ 0,00</span></div>
+            <div style="font-size:11px;color:var(--text3);" id="sant-pf-avail"></div>
+          </div>
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+            <div style="display:flex;justify-content:space-between;"><span>🏦 Santander PJ</span><span class="stat-value green" style="font-size:14px;" id="sant-pj-sum">R$ 0,00</span></div>
+            <div style="font-size:11px;color:var(--text3);" id="sant-pj-avail"></div>
+          </div>
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:14px;font-weight:800;"><span>💰 Total Geral</span><span class="stat-value orange" style="font-size:17px;" id="bank-total-sum">R$ 0,00</span></div>
         </div>
       </div>
@@ -344,6 +354,53 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="tx-table">
         <div class="tbl-head tx-cols"><div>Descrição</div><div class="col-cat">Categoria</div><div class="col-acct">Conta</div><div>Data</div><div>Valor</div><div class="no-print"></div></div>
         <div id="rpt-body"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Aplique um filtro para ver os lançamentos</div></div></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-cards">
+      <!-- CARDS STATS -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;">
+        <div class="stat-card red"><div class="stat-icon red">💳</div><div class="stat-label">Fatura Aberta Total</div><div class="stat-value red" id="card-total-open">R$ 0</div><div class="stat-delta" id="card-total-open-n">0 cartões</div></div>
+        <div class="stat-card yellow"><div class="stat-icon yellow">⏰</div><div class="stat-label">Vence em 7 dias</div><div class="stat-value yellow" id="card-due-soon">R$ 0</div><div class="stat-delta" id="card-due-soon-n">0 faturas</div></div>
+        <div class="stat-card green"><div class="stat-icon green">💰</div><div class="stat-label">Limite Disponível Total</div><div class="stat-value green" id="card-limit-avail">R$ 0</div><div class="stat-delta">em todos os cartões</div></div>
+      </div>
+      <!-- CARDS LIST -->
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">💳 Meus Cartões</div><div class="card-sub">Gerencie seus cartões</div></div>
+            <button class="btn btn-primary" id="btn-add-card">+ Novo Cartão</button>
+          </div>
+          <div style="padding:0 14px 14px;" id="cards-list">
+            <div class="empty"><div class="empty-icon">💳</div><div class="empty-text">Nenhum cartão cadastrado</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">📊 Gastos por Cartão</div><div class="card-sub">Distribuição das faturas</div></div>
+          </div>
+          <div style="padding:0 14px 14px;" id="cards-chart-wrap">
+            <canvas id="cardsChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- CARD TRANSACTIONS -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🧾 Lançamentos nos Cartões</div><div class="card-sub">Todas as despesas</div></div>
+          <div style="display:flex;gap:8px;">
+            <select id="card-filter-sel" style="padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;">
+              <option value="">Todos os cartões</option>
+            </select>
+            <button class="btn btn-primary" id="btn-new-card-tx">+ Lançar</button>
+          </div>
+        </div>
+        <div style="padding:0 14px 14px;">
+          <div class="tx-table" style="border:none;box-shadow:none;">
+            <div class="tbl-head" style="grid-template-columns:2fr 1fr 1fr 1fr auto;"><div>Descrição</div><div>Cartão</div><div>Categoria</div><div>Valor</div><div></div></div>
+            <div id="card-tx-body"><div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">Nenhum lançamento</div></div></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -424,6 +481,88 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
+<!-- CARD MODAL -->
+<div class="modal-overlay" id="card-modal">
+  <div class="modal">
+    <div class="modal-title" id="card-modal-title">Novo Cartão</div>
+    <div class="field"><label>Nome do Cartão</label><input type="text" id="card-name" placeholder="Ex: Nubank, Itaú Visa..."></div>
+    <div class="field-row">
+      <div class="field"><label>Bandeira</label>
+        <select id="card-brand">
+          <option value="Visa">💳 Visa</option>
+          <option value="Mastercard">💳 Mastercard</option>
+          <option value="Elo">💳 Elo</option>
+          <option value="Amex">💳 American Express</option>
+          <option value="Hipercard">💳 Hipercard</option>
+        </select>
+      </div>
+      <div class="field"><label>Conta</label>
+        <select id="card-account">
+          <option value="pj">PJ — Basecor</option>
+          <option value="pf">PF — Pessoal</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Limite Total (R$)</label><input type="number" id="card-limit" placeholder="5000,00" step="0.01"></div>
+      <div class="field"><label>Dia do Vencimento</label><input type="number" id="card-due-day" placeholder="10" min="1" max="31"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Dia do Fechamento</label><input type="number" id="card-close-day" placeholder="3" min="1" max="31"></div>
+      <div class="field"><label>Cor</label>
+        <select id="card-color">
+          <option value="#7c3aed">🟣 Roxo</option>
+          <option value="#2563eb">🔵 Azul</option>
+          <option value="#dc2626">🔴 Vermelho</option>
+          <option value="#16a34a">🟢 Verde</option>
+          <option value="#d97706">🟡 Amarelo</option>
+          <option value="#1a1f2e">⚫ Preto</option>
+          <option value="#f26522">🟠 Laranja</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="card-cancel-btn">Cancelar</button>
+      <button class="btn btn-primary" id="card-save-btn">Salvar Cartão</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARD TRANSACTION MODAL -->
+<div class="modal-overlay" id="card-tx-modal">
+  <div class="modal">
+    <div class="modal-title">Lançar no Cartão</div>
+    <div class="field"><label>Cartão</label><select id="ctx-card-id"></select></div>
+    <div class="field"><label>Descrição</label><input type="text" id="ctx-desc" placeholder="Ex: Supermercado, Posto..."></div>
+    <div class="field-row">
+      <div class="field"><label>Valor (R$)</label><input type="number" id="ctx-amount" placeholder="0,00" step="0.01"></div>
+      <div class="field"><label>Data</label><input type="date" id="ctx-date"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Categoria</label><select id="ctx-cat"></select></div>
+      <div class="field"><label>Parcelas</label>
+        <select id="ctx-installments">
+          <option value="1">À vista</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+          <option value="4">4x</option>
+          <option value="5">5x</option>
+          <option value="6">6x</option>
+          <option value="10">10x</option>
+          <option value="12">12x</option>
+          <option value="18">18x</option>
+          <option value="24">24x</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Observação</label><input type="text" id="ctx-obs" placeholder="Opcional..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ctx-cancel-btn">Cancelar</button>
+      <button class="btn btn-danger" id="ctx-save-btn">Lançar no Cartão</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="baixa-modal">
   <div class="modal">
     <div class="modal-title">Dar Baixa</div>
@@ -449,9 +588,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <div class="modal-overlay" id="bank-modal">
   <div class="modal">
-    <div class="modal-title" id="bank-modal-title">Atualizar Saldo</div>
-    <div class="field"><label>Saldo Atual (R$)</label><input type="number" id="bank-bal-input" step="0.01"></div>
-    <div class="field"><label>Observação</label><input type="text" id="bank-obs-input" placeholder="Ex: Saldo em 05/05/2026"></div>
+    <div class="modal-title" id="bank-modal-title">Atualizar Saldo Bancário</div>
+    <div class="field-row">
+      <div class="field"><label>Saldo Atual (R$)</label><input type="number" id="bank-bal-input" step="0.01" placeholder="0,00"></div>
+      <div class="field"><label>Limite da Conta (R$)</label><input type="number" id="bank-limit-input" step="0.01" placeholder="0,00 (cheque especial)"></div>
+    </div>
+    <div class="field"><label>Observação</label><input type="text" id="bank-obs-input" placeholder="Ex: Saldo em 06/05/2026"></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="bank-cancel-btn">Cancelar</button><button class="btn btn-primary" id="bank-save-btn">Salvar</button></div>
   </div>
 </div>
@@ -551,6 +693,217 @@ function openBase64File(base64Data, fileName){
   } else {
     win.document.write('<html><head><title>'+(fileName||'Arquivo')+'</title></head><body style="margin:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+base64Data+'" style="max-width:100%;max-height:100vh"/></body></html>');
   }
+}
+
+// ===== CREDIT CARDS STATE =====
+var cards = [], cardTransactions = [];
+var cardEditId = null, cardTxEditId = null;
+
+function startCardsListeners(){
+  db.collection('cards').orderBy('createdAt','desc').onSnapshot(function(snap){
+    cards=snap.docs.map(function(d){return Object.assign({},d.data(),{fid:d.id});});
+    renderCards();
+  });
+  db.collection('cardTransactions').orderBy('createdAt','desc').onSnapshot(function(snap){
+    cardTransactions=snap.docs.map(function(d){return Object.assign({},d.data(),{fid:d.id});});
+    renderCards();
+  });
+}
+
+function getCardUsed(cardId){
+  return cardTransactions.filter(function(t){return t.cardId===cardId;}).reduce(function(s,t){return s+t.amount;},0);
+}
+
+function renderCards(){
+  // Stats
+  var totalOpen=0, totalLimitAvail=0;
+  var now7=new Date();now7.setDate(now7.getDate()+7);
+  var dueSoon=0, dueSoonAmt=0;
+  cards.forEach(function(c){
+    var used=getCardUsed(c.fid);
+    var lim=c.limit||0;
+    totalOpen+=used;
+    totalLimitAvail+=(lim-used);
+    // Check if fatura vence em 7 dias
+    var nowD=new Date();
+    var dueDay=c.dueDay||1;
+    var dueDate=new Date(nowD.getFullYear(),nowD.getMonth(),dueDay);
+    if(dueDate<nowD) dueDate=new Date(nowD.getFullYear(),nowD.getMonth()+1,dueDay);
+    var diff=Math.ceil((dueDate-nowD)/(1000*60*60*24));
+    if(diff<=7&&used>0){dueSoon++;dueSoonAmt+=used;}
+  });
+  el('card-total-open').textContent=fmt(totalOpen);
+  el('card-total-open-n').textContent=cards.length+' cartões';
+  el('card-due-soon').textContent=fmt(dueSoonAmt);
+  el('card-due-soon-n').textContent=dueSoon+' fatura(s)';
+  el('card-limit-avail').textContent=fmt(Math.max(0,totalLimitAvail));
+
+  // Cards list
+  var cl=el('cards-list');
+  if(!cards.length){cl.innerHTML='<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">Nenhum cartão cadastrado</div></div>';return;}
+  cl.innerHTML=cards.map(function(c){
+    var used=getCardUsed(c.fid);
+    var lim=c.limit||0;
+    var avail=Math.max(0,lim-used);
+    var pct=lim>0?Math.min((used/lim*100),100).toFixed(0):0;
+    var usedColor=pct>80?'#ef4444':pct>50?'#f97316':'#22c55e';
+    var nowD=new Date();
+    var dueDay=c.dueDay||1;
+    var dueDate=new Date(nowD.getFullYear(),nowD.getMonth(),dueDay);
+    if(dueDate<nowD) dueDate=new Date(nowD.getFullYear(),nowD.getMonth()+1,dueDay);
+    var diff=Math.ceil((dueDate-nowD)/(1000*60*60*24));
+    return '<div style="background:linear-gradient(135deg,'+c.color+','+c.color+'cc);border-radius:12px;padding:16px;margin-bottom:10px;color:#fff;position:relative;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
+      '<div>'+
+      '<div style="font-size:14px;font-weight:800;">'+c.name+'</div>'+
+      '<div style="font-size:10px;opacity:.7;font-family:DM Mono,monospace;">'+c.brand+' · '+(c.account==='pj'?'PJ':'PF')+'</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:4px;">'+
+      '<button style="background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;" onclick="openCardModal(''+c.fid+'')">✏️</button>'+
+      '<button style="background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;" onclick="deleteCard(''+c.fid+'')">🗑</button>'+
+      '</div></div>'+
+      '<div style="margin-top:12px;">'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;opacity:.8;margin-bottom:4px;"><span>Usado: '+fmt(used)+'</span><span>Limite: '+fmt(lim)+'</span></div>'+
+      '<div style="height:5px;background:rgba(255,255,255,0.25);border-radius:3px;"><div style="height:100%;width:'+pct+'%;background:'+usedColor+';border-radius:3px;transition:width .5s;"></div></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px;"><span style="opacity:.8">Disponível: <strong>'+fmt(avail)+'</strong></span>'+
+      '<span style="opacity:.8;color:'+(diff<=3?'#fca5a5':'#fff')+'">Vence: '+diff+'d (dia '+dueDay+')</span></div>'+
+      '</div></div>';
+  }).join('');
+
+  // Update card filter select
+  var cfs=el('card-filter-sel');
+  if(cfs){var cv=cfs.value;cfs.innerHTML='<option value="">Todos os cartões</option>'+cards.map(function(c){return '<option value="'+c.fid+'"'+(c.fid===cv?' selected':'')+'>'+c.name+'</option>';}).join('');cfs.value=cv;}
+
+  // Update ctx card select
+  var ctxSel=el('ctx-card-id');
+  if(ctxSel){ctxSel.innerHTML=cards.map(function(c){return '<option value="'+c.fid+'">'+c.name+'</option>';}).join('');}
+
+  renderCardTransactions();
+  renderCardsChart();
+}
+
+function renderCardTransactions(){
+  var filterCard=el('card-filter-sel')?el('card-filter-sel').value:'';
+  var list=filterCard?cardTransactions.filter(function(t){return t.cardId===filterCard;}):cardTransactions;
+  var tbody=el('card-tx-body');
+  if(!list.length){tbody.innerHTML='<div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">Nenhum lançamento</div></div>';return;}
+  tbody.innerHTML='';
+  list.forEach(function(t){
+    var card=cards.find(function(c){return c.fid===t.cardId;})||{name:'?',color:'#666'};
+    var cat=getCat(t.cat);
+    var row=document.createElement('div');
+    row.className='tbl-row';row.style.gridTemplateColumns='2fr 1fr 1fr 1fr auto';
+    row.innerHTML='<div><div style="font-size:12px;font-weight:600;">'+t.desc+'</div>'+
+      (t.installments>1?'<span style="background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;">'+t.installmentNum+'/'+t.installments+'</span>':'')+'</div>'+
+      '<div><span style="background:'+card.color+'22;color:'+card.color+';padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;">'+card.name+'</span></div>'+
+      '<div><span class="badge expense">'+cat.name+'</span></div>'+
+      '<div class="tx-amount expense">-'+fmt(t.amount)+'</div>'+
+      '<div class="row-actions"></div>';
+    var ra=row.querySelector('.row-actions');
+    var bd=document.createElement('button');bd.className='btn-act del';bd.textContent='🗑';
+    (function(fid){bd.addEventListener('click',function(){deleteCardTx(fid);});})(t.fid);
+    ra.appendChild(bd);
+    tbody.appendChild(row);
+  });
+}
+
+function renderCardsChart(){
+  var ctx=el('cardsChart');if(!ctx)return;
+  var ctxC=ctx.getContext('2d');
+  if(!cards.length){ctxC.clearRect(0,0,ctx.offsetWidth,ctx.height);return;}
+  var W=ctx.offsetWidth||400,H=ctx.height;ctx.width=W;ctxC.clearRect(0,0,W,H);
+  var pad={top:12,right:12,bottom:36,left:60};
+  var cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  var maxV=Math.max.apply(null,cards.map(function(c){return c.limit||0;}).concat([1]));
+  var bpg=cW/cards.length,bw=Math.min(bpg*0.35,30);
+  ctxC.strokeStyle='#eef0f5';ctxC.lineWidth=1;
+  for(var i=0;i<=4;i++){var y=pad.top+cH-(i/4)*cH;ctxC.beginPath();ctxC.moveTo(pad.left,y);ctxC.lineTo(pad.left+cW,y);ctxC.stroke();ctxC.fillStyle='#9aa2b8';ctxC.font='9px DM Mono';ctxC.textAlign='right';ctxC.fillText(fmtS(maxV*i/4),pad.left-3,y+3);}
+  cards.forEach(function(c,i){
+    var used=getCardUsed(c.fid);
+    var lim=c.limit||0;
+    var x=pad.left+i*bpg+bpg/2;
+    // Limit bar (background)
+    if(lim>0){ctxC.fillStyle=c.color+'33';var limH=(lim/maxV)*cH;rrect(ctxC,x-bw/2,pad.top+cH-limH,bw,limH,3);}
+    // Used bar (foreground)
+    if(used>0){ctxC.fillStyle=c.color;var usedH=(used/maxV)*cH;rrect(ctxC,x-bw/2,pad.top+cH-usedH,bw,usedH,3);}
+    ctxC.fillStyle='#9aa2b8';ctxC.font='9px DM Mono';ctxC.textAlign='center';ctxC.fillText(c.name.substring(0,8),x,H-4);
+  });
+}
+
+// Card CRUD
+function openCardModal(fid){
+  cardEditId=fid||null;
+  el('card-modal-title').textContent=fid?'Editar Cartão':'Novo Cartão';
+  if(fid){
+    var c=cards.find(function(x){return x.fid===fid;});if(!c)return;
+    el('card-name').value=c.name;el('card-brand').value=c.brand;el('card-account').value=c.account;
+    el('card-limit').value=c.limit;el('card-due-day').value=c.dueDay;el('card-close-day').value=c.closeDay;el('card-color').value=c.color;
+  } else {
+    el('card-name').value='';el('card-brand').value='Visa';el('card-account').value='pf';
+    el('card-limit').value='';el('card-due-day').value='';el('card-close-day').value='';el('card-color').value='#7c3aed';
+  }
+  el('card-modal').classList.add('open');
+  setTimeout(function(){el('card-name').focus();},100);
+}
+function closeCardModal(){el('card-modal').classList.remove('open');cardEditId=null;}
+function saveCard(){
+  var name=val('card-name').trim(),brand=val('card-brand'),account=val('card-account');
+  var limit=parseFloat(val('card-limit'))||0,dueDay=parseInt(val('card-due-day'))||10;
+  var closeDay=parseInt(val('card-close-day'))||3,color=val('card-color');
+  if(!name){showToast('⚠️ Informe o nome do cartão!','error');return;}
+  var data={name:name,brand:brand,account:account,limit:limit,dueDay:dueDay,closeDay:closeDay,color:color};
+  var p=cardEditId?db.collection('cards').doc(cardEditId).update(data):db.collection('cards').add(Object.assign({},data,{createdAt:new Date().toISOString()}));
+  p.then(function(){closeCardModal();showToast('✅ Cartão salvo!','success');}).catch(function(){showToast('❌ Erro!','error');});
+}
+function deleteCard(fid){
+  if(!confirm('Excluir cartão e todos os lançamentos?'))return;
+  db.collection('cards').doc(fid).delete().then(function(){showToast('🗑️ Cartão removido','success');});
+}
+
+// Card TX
+function openCardTxModal(){
+  if(!cards.length){showToast('⚠️ Cadastre um cartão primeiro!','error');return;}
+  el('ctx-desc').value='';el('ctx-amount').value='';el('ctx-date').value=today();
+  el('ctx-obs').value='';el('ctx-installments').value='1';
+  populateSel('ctx-cat');
+  el('card-tx-modal').classList.add('open');
+  setTimeout(function(){el('ctx-desc').focus();},100);
+}
+function closeCardTxModal(){el('card-tx-modal').classList.remove('open');}
+function saveCardTx(){
+  var cardId=val('ctx-card-id'),desc=val('ctx-desc').trim();
+  var amount=parseFloat(val('ctx-amount')),date=val('ctx-date');
+  var cat=val('ctx-cat'),obs=val('ctx-obs').trim();
+  var installments=parseInt(val('ctx-installments'))||1;
+  if(!desc){showToast('⚠️ Informe uma descrição!','error');return;}
+  if(!amount||amount<=0){showToast('⚠️ Informe um valor válido!','error');return;}
+  if(!date){showToast('⚠️ Informe a data!','error');return;}
+  var parcVal=installments>1?amount/installments:amount;
+  var promises=[];
+  for(var i=0;i<installments;i++){
+    var txData={cardId:cardId,desc:desc+(installments>1?' ('+(i+1)+'/'+installments+')':''),
+      amount:parcVal,date:addMonths(date,i),cat:cat,obs:obs,
+      installments:installments,installmentNum:i+1,
+      createdAt:new Date().toISOString()};
+    promises.push(db.collection('cardTransactions').add(txData));
+  }
+  Promise.all(promises).then(function(){
+    closeCardTxModal();
+    showToast('✅ '+(installments>1?installments+'x lançadas!':'Lançado no cartão!'),'success');
+    // Also create bill for payment
+    var card=cards.find(function(c){return c.fid===cardId;});
+    if(card){
+      var now=new Date();
+      var dueDate=new Date(now.getFullYear(),now.getMonth(),card.dueDay);
+      if(dueDate<now) dueDate=new Date(now.getFullYear(),now.getMonth()+1,card.dueDay);
+      var dueStr=dueDate.getFullYear()+'-'+String(dueDate.getMonth()+1).padStart(2,'0')+'-'+String(dueDate.getDate()).padStart(2,'0');
+      db.collection('bills').add({desc:'Fatura '+card.name,amount:parcVal,type:'payable',due:dueStr,cat:'cartao-cred',obs:desc,account:card.account,paid:false,recurType:'once',createdAt:new Date().toISOString()});
+    }
+  }).catch(function(){showToast('❌ Erro!','error');});
+}
+function deleteCardTx(fid){
+  if(!confirm('Confirma exclusão?'))return;
+  db.collection('cardTransactions').doc(fid).delete().then(function(){showToast('🗑️ Removido','success');});
 }
 
 function clearFile(hiddenInputId, previewId){
@@ -708,19 +1061,21 @@ function startApp(){
       extra.filter(function(e){return defIds.indexOf(e.id)===-1;}).forEach(function(e){categories.push(e);});
     }
     populateSel('tx-cat');populateSel('bill-cat');
+  startCardsListeners();
   });
   // Default report dates
   var now=new Date();
   el('rpt-from').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
   el('rpt-to').value=today();
   populateSel('tx-cat');populateSel('bill-cat');
+  startCardsListeners();
   wireEvents();
 }
 
 // ===== WIRE ALL EVENTS =====
 function wireEvents(){
   // Navigation
-  var navItems=['dashboard','transactions','bills','banks','reports','categories'];
+  var navItems=['dashboard','transactions','bills','banks','reports','cards','categories'];
   navItems.forEach(function(v){
     el('nav-'+v).addEventListener('click',function(){navigate(v);});
   });
@@ -770,6 +1125,17 @@ function wireEvents(){
   el('btn-rpt-filter').addEventListener('click',renderReports);
   el('btn-print').addEventListener('click',printReport);
   el('btn-add-cat').addEventListener('click',addCat);
+  // Cards
+  el('nav-cards').addEventListener('click',function(){navigate('cards');});
+  el('btn-add-card').addEventListener('click',function(){openCardModal(null);});
+  el('card-cancel-btn').addEventListener('click',closeCardModal);
+  el('card-save-btn').addEventListener('click',saveCard);
+  el('card-modal').addEventListener('click',function(e){if(e.target===this)closeCardModal();});
+  el('btn-new-card-tx').addEventListener('click',openCardTxModal);
+  el('ctx-cancel-btn').addEventListener('click',closeCardTxModal);
+  el('ctx-save-btn').addEventListener('click',saveCardTx);
+  el('card-tx-modal').addEventListener('click',function(e){if(e.target===this)closeCardTxModal();});
+  el('card-filter-sel').addEventListener('change',renderCardTransactions);
   el('btn-ai').addEventListener('click',function(){el('ai-modal').classList.add('open');});
   el('ai-close-btn').addEventListener('click',function(){el('ai-modal').classList.remove('open');});
   el('ai-modal').addEventListener('click',function(e){if(e.target===this)el('ai-modal').classList.remove('open');});
@@ -794,7 +1160,7 @@ function navigate(view){
     el('nav-'+v).classList.toggle('active',v===view);
     el('view-'+v).classList.toggle('active',v===view);
   });
-  var titles={dashboard:'Dashboard',transactions:'Lançamentos',bills:'Contas a Pagar/Receber',banks:'Saldos Bancários',reports:'Relatórios',categories:'Categorias'};
+  var titles={dashboard:'Dashboard',transactions:'Lançamentos',bills:'Contas a Pagar/Receber',banks:'Saldos Bancários',reports:'Relatórios',cards:'Cartões de Crédito',categories:'Categorias'};
   el('page-title').textContent=titles[view]||view;
   closeSidebar();
   renderAll();
@@ -972,6 +1338,7 @@ function openBankModal(id){
   var names={'itau-pf':'Itaú PF','sant-pf':'Santander PF','sant-pj':'Santander PJ'};
   el('bank-modal-title').textContent='Atualizar — '+names[id];
   el('bank-bal-input').value=bankBalances[id]?bankBalances[id].balance:0;
+  el('bank-limit-input').value=bankBalances[id]?bankBalances[id].limit||0:0;
   el('bank-obs-input').value=bankBalances[id]?bankBalances[id].obs:'';
   el('bank-modal').classList.add('open');
   setTimeout(function(){el('bank-bal-input').focus();},100);
@@ -979,8 +1346,10 @@ function openBankModal(id){
 function closeBankModal(){el('bank-modal').classList.remove('open');currentBankId=null;}
 function saveBankBal(){
   if(!currentBankId)return;
-  var balance=parseFloat(val('bank-bal-input'))||0,obs=val('bank-obs-input').trim();
-  bankBalances[currentBankId]={balance:balance,obs:obs,updated:today()};
+  var balance=parseFloat(val('bank-bal-input'))||0;
+  var limit=parseFloat(val('bank-limit-input'))||0;
+  var obs=val('bank-obs-input').trim();
+  bankBalances[currentBankId]={balance:balance,limit:limit,obs:obs,updated:today()};
   db.collection('settings').doc('banks').set(bankBalances)
     .then(function(){closeBankModal();renderBanks();showToast('✅ Saldo atualizado!','success');})
     .catch(function(){closeBankModal();renderBanks();showToast('✅ Saldo atualizado!','success');});
@@ -1030,7 +1399,10 @@ function getFinancialContext(){
     recurrentCount:bills.filter(function(b){return b.recurType==='recur'&&!b.paid;}).length,
     installmentsCount:bills.filter(function(b){return b.recurType==='installment'&&!b.paid;}).length,
     topCategories:topCats.map(function(e){return getCat(e[0]).name+': R$'+e[1].toFixed(2);}),
-    banks:bankBalances
+    banks:bankBalances,
+    cardsCount:cards.length,
+    cardsTotalUsed:cards.reduce(function(s,c){return s+getCardUsed(c.fid);},0),
+    cardsTotalLimit:cards.reduce(function(s,c){return s+(c.limit||0);},0)
   };
 }
 function addAIMessage(text,isUser){
@@ -1153,6 +1525,19 @@ function analyzeFinancial(q){
   }
 
   // Default - resumo geral
+  // Cartões
+  if(ql.includes('cartão')||ql.includes('cartao')||ql.includes('fatura')||ql.includes('crédito')){
+    if(!cards.length) return '💳 Você não tem cartões cadastrados ainda. Acesse **Cartões de Crédito** para cadastrar.';
+    var resp='💳 **Resumo dos Cartões:**\n\n';
+    cards.forEach(function(c){
+      var used=getCardUsed(c.fid);var lim=c.limit||0;
+      resp+='• **'+c.name+'**: Fatura '+fmt(used)+' / Limite '+fmt(lim)+' (Disponível: '+fmt(Math.max(0,lim-used))+')\n';
+    });
+    resp+='\n💰 **Total em faturas:** '+fmt(ctx.cardsTotalUsed);
+    resp+='\n✅ **Limite disponível total:** '+fmt(Math.max(0,ctx.cardsTotalLimit-ctx.cardsTotalUsed));
+    return resp;
+  }
+
   var resp = '📊 **Resumo Geral da Basecor:**\n\n';
   resp += '💰 Saldo: **'+fmt(ctx.balance)+'**\n';
   resp += '↑ Entradas: '+fmt(ctx.totalIncome)+'\n';
@@ -1328,12 +1713,45 @@ function renderCatBars(tx){
 function renderBanks(){
   var total=0;
   ['itau-pf','sant-pf','sant-pj'].forEach(function(id){
-    var b=bankBalances[id]||{balance:0};total+=b.balance;
-    el(id+'-bal').textContent=fmt(b.balance);
-    el(id+'-bal').className='bank-balance '+(b.balance>=0?'pos':'neg');
-    el(id+'-upd').textContent=b.updated?'Atualizado em '+fmtD(b.updated):'Não atualizado';
-    el(id+'-sum').textContent=fmt(b.balance);
-    el(id+'-sum').className='stat-value '+(b.balance>=0?'green':'red');
+    var b=bankBalances[id]||{balance:0,limit:0};
+    total+=b.balance;
+    var lim=b.limit||0;
+    var avail=b.balance+lim; // total disponível = saldo + limite
+    // Update main card
+    var balEl=el(id+'-bal');
+    if(balEl){balEl.textContent=fmt(b.balance);balEl.className='bank-balance '+(b.balance>=0?'pos':'neg');}
+    var updEl=el(id+'-upd');
+    if(updEl)updEl.textContent=b.updated?'Atualizado em '+fmtD(b.updated):'Não atualizado';
+    // Update limit info
+    var limEl=el(id+'-limit');
+    if(limEl){
+      if(lim>0){
+        var used=b.balance<0?Math.abs(b.balance):0;
+        var pct=lim>0?(used/lim*100).toFixed(0):0;
+        limEl.innerHTML=
+          '<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.1);border-radius:6px;">'+
+          '<div style="font-size:9px;color:rgba(255,255,255,0.6);text-transform:uppercase;font-family:DM Mono,monospace;margin-bottom:4px;">LIMITE / CHEQUE ESPECIAL</div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:11px;color:#fff;margin-bottom:4px;">'+
+          '<span>Limite total: '+fmt(lim)+'</span>'+
+          '<span style="color:'+(used>0?'#fca5a5':'#86efac')+'">'+
+          (used>0?'Usando: '+fmt(used):'Disponível')+
+          '</span></div>'+
+          '<div style="height:4px;background:rgba(255,255,255,0.2);border-radius:2px;">'+
+          '<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+(used>lim*0.8?'#ef4444':used>0?'#f97316':'#22c55e')+';border-radius:2px;"></div></div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,0.8);margin-top:3px;">Disponível total: '+fmt(avail)+'</div>'+
+          '</div>';
+      } else {
+        limEl.innerHTML='';
+      }
+    }
+    // Summary table
+    var sumEl=el(id+'-sum');
+    if(sumEl){sumEl.textContent=fmt(b.balance);sumEl.className='stat-value '+(b.balance>=0?'green':'red');}
+    var availEl=el(id+'-avail');
+    if(availEl&&lim>0){
+      availEl.textContent='Disponível: '+fmt(avail);
+      availEl.style.color=avail>=0?'var(--green)':'var(--red)';
+    }
   });
   el('bank-total-sum').textContent=fmt(total);
   el('bank-total-sum').className='stat-value '+(total>=0?'orange':'red');
