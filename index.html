@@ -255,6 +255,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <div class="stat-card"><div class="stat-icon orange">◈</div><div class="stat-label">Saldo</div><div class="stat-value orange" id="st-bal">R$ 0</div><div class="stat-delta" id="st-bal-pct">—</div></div>
         <div class="stat-card"><div class="stat-icon yellow">⏰</div><div class="stat-label">Vence em 7 dias</div><div class="stat-value yellow" id="st-due">R$ 0</div><div class="stat-delta" id="st-due-n">0 contas</div></div>
       </div>
+      <!-- SECOND ROW STATS -->
+      <div class="stats-grid" style="margin-bottom:16px;">
+        <div class="stat-card green"><div class="stat-icon green">💰</div><div class="stat-label">A Receber (Aberto)</div><div class="stat-value green" id="st-receivable">R$ 0</div><div class="stat-delta" id="st-receivable-n">0 contas</div></div>
+        <div class="stat-card red"><div class="stat-icon red">💸</div><div class="stat-label">A Pagar (Aberto)</div><div class="stat-value red" id="st-payable">R$ 0</div><div class="stat-delta" id="st-payable-n">0 contas</div></div>
+        <div class="stat-card blue"><div class="stat-icon blue">📦</div><div class="stat-label">Parcelas em Aberto</div><div class="stat-value blue" id="st-installments">R$ 0</div><div class="stat-delta" id="st-inst-n">0 parcelas</div></div>
+        <div class="stat-card orange"><div class="stat-icon orange">🔄</div><div class="stat-label">Recorrências Ativas</div><div class="stat-value orange" id="st-recurrences">R$ 0</div><div class="stat-delta" id="st-recur-n">0 contas</div></div>
+      </div>
       <div class="grid-3">
         <div class="card"><div class="card-header"><div><div class="card-title">Fluxo de Caixa</div><div class="card-sub">Entradas × Saídas</div></div></div><div class="chart-wrap"><canvas id="flowChart" height="175"></canvas></div></div>
         <div class="card"><div class="card-header"><div><div class="card-title">Por Categoria</div></div></div><div style="display:flex;align-items:center;gap:10px;padding:0 13px 13px;"><canvas id="donutChart" width="85" height="85"></canvas><div style="flex:1;" id="donut-legend"></div></div></div>
@@ -348,7 +355,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div style="margin-bottom:13px;" class="card"><div class="card-header"><div><div class="card-title">Evolução do Saldo</div></div></div><div class="chart-wrap"><canvas id="balanceChart" height="170"></canvas></div></div>
       <div class="grid-2" style="margin-bottom:13px;">
-        <div class="card"><div class="card-header"><div><div class="card-title">Gastos por Categoria</div></div></div><div class="chart-wrap"><canvas id="barChart" height="170"></canvas></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Gastos por Categoria</div></div></div><div class="chart-wrap" style="overflow-y:auto;max-height:350px;"><canvas id="barChart"></canvas></div></div>
         <div class="card"><div class="card-header"><div><div class="card-title">PJ vs PF</div></div></div><div class="chart-wrap"><canvas id="acctChart" height="170"></canvas></div></div>
       </div>
       <div class="tx-table">
@@ -1654,6 +1661,19 @@ function renderAll(){
   var due7=bills.filter(function(b){if(b.paid)return false;var d=new Date(b.due+'T00:00:00');return d<=now7;});
   el('st-due').textContent=fmt(due7.reduce(function(s,b){return s+b.amount;},0));
   el('st-due-n').textContent=due7.length+' contas';
+  // New stats
+  var receivable=bills.filter(function(b){return !b.paid&&b.type==='receivable';});
+  var payable=bills.filter(function(b){return !b.paid&&b.type==='payable';});
+  var installmentsOpen=bills.filter(function(b){return !b.paid&&b.recurType==='installment';});
+  var recurrencesOpen=bills.filter(function(b){return !b.paid&&b.recurType==='recur';});
+  el('st-receivable').textContent=fmt(receivable.reduce(function(s,b){return s+b.amount;},0));
+  el('st-receivable-n').textContent=receivable.length+' contas';
+  el('st-payable').textContent=fmt(payable.reduce(function(s,b){return s+b.amount;},0));
+  el('st-payable-n').textContent=payable.length+' contas';
+  el('st-installments').textContent=fmt(installmentsOpen.reduce(function(s,b){return s+b.amount;},0));
+  el('st-inst-n').textContent=installmentsOpen.length+' parcelas';
+  el('st-recurrences').textContent=fmt(recurrencesOpen.reduce(function(s,b){return s+b.amount;},0));
+  el('st-recur-n').textContent=recurrencesOpen.length+' contas';
   // Alerts
   var ov=bills.filter(function(b){return !b.paid&&billStatus(b)==='vencido';});
   el('alert-area').innerHTML=ov.length>0?'<div class="alert-box red">⚠️ <strong>'+ov.length+' conta(s) vencida(s)!</strong> Total: '+fmt(ov.reduce(function(s,b){return s+b.amount;},0))+'</div>':'';
@@ -1945,15 +1965,44 @@ function drawLine(ctx,labels,data,color){
 }
 
 function drawBars(ctx,labels,data,colors){
-  var W=ctx.canvas.offsetWidth||400,H=ctx.canvas.height;ctx.canvas.width=W;ctx.clearRect(0,0,W,H);
-  var pad={top:12,right:12,bottom:48,left:50},cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
-  var n=labels.length;if(!n)return;var maxV=Math.max.apply(null,data.concat([1]));
-  ctx.strokeStyle='#eef0f5';ctx.lineWidth=1;
-  for(var i=0;i<=4;i++){var y=pad.top+cH-(i/4)*cH;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();ctx.fillStyle='#9aa2b8';ctx.font='9px DM Mono';ctx.textAlign='right';ctx.fillText(fmtS(maxV*i/4),pad.left-3,y+3);}
-  var bpg=cW/n,bw=Math.min(bpg*0.55,30);
-  for(var i=0;i<n;i++){var x=pad.left+i*bpg+bpg/2-bw/2,bH=(data[i]/maxV)*cH;ctx.fillStyle=colors[i]||'#f26522';rrect(ctx,x,pad.top+cH-bH,bw,bH,3);}
-  ctx.fillStyle='#9aa2b8';ctx.font='9px DM Mono';ctx.textAlign='center';
-  for(var i=0;i<n;i++){var x=pad.left+i*bpg+bpg/2;var ws=labels[i].split(' ');for(var j=0;j<ws.length;j++)ctx.fillText(ws[j],x,H-6+(j*10));}
+  // HORIZONTAL BARS - much more readable for categories
+  var n=labels.length;if(!n)return;
+  // Calculate needed height based on number of bars
+  var barH=28,gap=8,padTop=12,padBottom=12,padLeft=140,padRight=70;
+  var neededH=padTop+n*(barH+gap)+padBottom;
+  var canvas=ctx.canvas;
+  var W=canvas.offsetWidth||400;
+  canvas.width=W;
+  canvas.height=neededH;
+  ctx.clearRect(0,0,W,neededH);
+  var cW=W-padLeft-padRight;
+  var maxV=Math.max.apply(null,data.concat([1]));
+  // Grid lines
+  for(var g=0;g<=4;g++){
+    var x=padLeft+(g/4)*cW;
+    ctx.strokeStyle='#eef0f5';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,padTop);ctx.lineTo(x,neededH-padBottom);ctx.stroke();
+    ctx.fillStyle='#9aa2b8';ctx.font='9px DM Mono';ctx.textAlign='center';
+    ctx.fillText(fmtS(maxV*g/4),x,neededH-2);
+  }
+  // Bars
+  for(var i=0;i<n;i++){
+    var y=padTop+i*(barH+gap);
+    var bw=Math.max((data[i]/maxV)*cW,2);
+    // Background bar
+    ctx.fillStyle='#f4f6fa';
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(padLeft,y,cW,barH,4):null;ctx.fill();
+    // Value bar
+    ctx.fillStyle=colors[i]||'#f26522';
+    rrect(ctx,padLeft,y,bw,barH,4);
+    // Label (left side)
+    ctx.fillStyle='#1a1f2e';ctx.font='bold 11px Plus Jakarta Sans';ctx.textAlign='right';
+    var shortLabel=labels[i].length>18?labels[i].substring(0,16)+'...':labels[i];
+    ctx.fillText(shortLabel,padLeft-6,y+barH/2+4);
+    // Value (right side)
+    ctx.fillStyle='#5a6380';ctx.font='10px DM Mono';ctx.textAlign='left';
+    ctx.fillText(fmt(data[i]),padLeft+bw+5,y+barH/2+4);
+  }
 }
 
 function drawGroupBars(ctx,labels,datasets,colors,names){
