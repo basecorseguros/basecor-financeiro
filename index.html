@@ -1273,6 +1273,72 @@ function setBillType(type){
   el('bill-tab-rec').classList.toggle('active',type==='receivable');
   el('bill-save-btn').className='btn '+(type==='payable'?'btn-danger':'btn-success');
 }
+
+// ===== RECURRENCE & INSTALLMENT FUNCTIONS =====
+function addMonths(dateStr, months){
+  var parts = dateStr.split('-');
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  d.setMonth(d.getMonth() + months);
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
+function createInstallments(baseData, count){
+  var promises = [];
+  for(var i = 0; i < count; i++){
+    var installData = Object.assign({}, baseData, {
+      due: addMonths(baseData.due, i),
+      installmentNum: i+1,
+      installmentTotal: count,
+      desc: baseData.desc + ' (' + (i+1) + '/' + count + ')',
+      paid: false,
+      recurType: 'installment',
+      createdAt: new Date().toISOString()
+    });
+    promises.push(db.collection('bills').add(installData));
+  }
+  return Promise.all(promises);
+}
+
+function createNextRecurrence(bill){
+  var nextData = Object.assign({}, bill);
+  delete nextData.fid;
+  nextData.due = addMonths(bill.due, 1);
+  nextData.paid = false;
+  nextData.paidAt = null;
+  nextData.paidAmount = null;
+  nextData.paidObs = null;
+  nextData.compLink = null;
+  nextData.compName = null;
+  nextData.faturaLink = null;
+  nextData.faturaName = null;
+  nextData.createdAt = new Date().toISOString();
+  return db.collection('bills').add(nextData);
+}
+
+function toggleRecurFields(){
+  var type = val('bill-recur-type');
+  var instField = el('bill-installment-field');
+  var infoDiv = el('bill-recur-info');
+  if(!instField || !infoDiv) return;
+  if(type === 'installment'){
+    instField.style.display = 'block';
+    infoDiv.style.display = 'block';
+    infoDiv.textContent = '📦 O sistema criará todas as parcelas automaticamente com datas e valores.';
+    infoDiv.style.color = 'var(--blue)';
+  } else if(type === 'recur'){
+    instField.style.display = 'none';
+    infoDiv.style.display = 'block';
+    infoDiv.textContent = '🔄 Este lançamento se repetirá automaticamente todo mês na mesma data.';
+    infoDiv.style.color = 'var(--green)';
+  } else {
+    instField.style.display = 'none';
+    infoDiv.style.display = 'none';
+  }
+}
+
 function saveBill(){
   var desc=val('bill-desc').trim(),amount=parseFloat(val('bill-amount')),due=val('bill-due'),cat=val('bill-cat'),obs=val('bill-obs').trim(),acct=val('bill-acct');
   if(!desc){showToast('⚠️ Informe uma descrição!','error');return;}
