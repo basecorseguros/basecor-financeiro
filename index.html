@@ -368,6 +368,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="field"><label>Descrição</label><input type="text" id="tx-desc" placeholder="Ex: Salário, Aluguel..."></div>
     <div class="field-row"><div class="field"><label>Valor (R$)</label><input type="number" id="tx-amount" placeholder="0,00" min="0" step="0.01"></div><div class="field"><label>Categoria</label><select id="tx-cat"></select></div></div>
     <div class="field"><label>Observação</label><input type="text" id="tx-obs" placeholder="Opcional..."></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">🔄 REPETIÇÃO (opcional)</div>
+      <div class="field" style="margin-bottom:0">
+        <select id="tx-recur-type">
+          <option value="once">Sem repetição</option>
+          <option value="recur">🔄 Repetir todo mês</option>
+        </select>
+      </div>
+    </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="tx-cancel-btn">Cancelar</button><button class="btn btn-primary" id="tx-save-btn">Salvar</button></div>
   </div>
 </div>
@@ -824,7 +833,7 @@ function openTxModal(type,fid){
   } else {
     setTxType(type||'income');
     el('tx-date').value=today();
-    el('tx-desc').value='';el('tx-amount').value='';el('tx-obs').value='';
+    el('tx-desc').value='';el('tx-amount').value='';el('tx-obs').value='';el('tx-recur-type').value='once';
     el('tx-acct').value=currentAccount;
     populateSel('tx-cat');
   }
@@ -844,7 +853,8 @@ function saveTx(){
   if(!amount||amount<=0){showToast('⚠️ Informe um valor válido!','error');return;}
   if(!date){showToast('⚠️ Informe uma data!','error');return;}
   sync('sync');
-  var data={desc:desc,amount:amount,type:txType,cat:cat,date:date,obs:obs,account:acct};
+  var txRecur = val('tx-recur-type')||'once';
+  var data={desc:desc,amount:amount,type:txType,cat:cat,date:date,obs:obs,account:acct,recurType:txRecur};
   var p=txEditId?db.collection('transactions').doc(txEditId).update(data):db.collection('transactions').add(Object.assign({},data,{createdAt:new Date().toISOString()}));
   p.then(function(){closeTxModal();showToast('✅ '+(txEditId?'Atualizado!':'Salvo!'),'success');})
    .catch(function(){showToast('❌ Erro ao salvar!','error');});
@@ -1037,38 +1047,120 @@ function addAILoading(){
 }
 function removeAILoading(){var l=el('ai-loading');if(l)l.remove();}
 function askAI(q){el('ai-input').value=q;sendAI();}
-async function sendAI(){
+function sendAI(){
   var q=val('ai-input').trim();if(!q)return;
-  el('ai-input').value='';el('ai-send-btn').disabled=true;
-  addAIMessage(q,true);addAILoading();
-  var ctx=getFinancialContext();
-  var sys='Você é a Assistente Financeira IA da Basecor Corretora de Seguros. Responda em português, seja claro e objetivo. Use emojis com moderação.\n\nDADOS FINANCEIROS ATUAIS:\n'+
-    '- Saldo total: R$ '+ctx.balance.toFixed(2)+'\n'+
-    '- Entradas: R$ '+ctx.totalIncome.toFixed(2)+'\n'+
-    '- Saídas: R$ '+ctx.totalExpense.toFixed(2)+'\n'+
-    '- Saldo PJ Basecor: R$ '+ctx.pjBalance.toFixed(2)+'\n'+
-    '- Saldo PF Pessoal: R$ '+ctx.pfBalance.toFixed(2)+'\n'+
-    '- A pagar em aberto: R$ '+ctx.payableOpen.toFixed(2)+'\n'+
-    '- A receber em aberto: R$ '+ctx.receivableOpen.toFixed(2)+'\n'+
-    '- Contas vencidas: '+ctx.overdueCount+' (R$ '+ctx.overdueTotal.toFixed(2)+')\n'+
-    '- Vencendo em 7 dias: '+ctx.upcomingCount+' (R$ '+ctx.upcomingTotal.toFixed(2)+')\n'+
-    '- Recorrentes ativos: '+ctx.recurrentCount+'\n'+
-    '- Parcelas em aberto: '+ctx.installmentsCount+'\n'+
-    '- Itaú PF: R$ '+(ctx.banks['itau-pf']?ctx.banks['itau-pf'].balance:0).toFixed(2)+'\n'+
-    '- Santander PF: R$ '+(ctx.banks['sant-pf']?ctx.banks['sant-pf'].balance:0).toFixed(2)+'\n'+
-    '- Santander PJ: R$ '+(ctx.banks['sant-pj']?ctx.banks['sant-pj'].balance:0).toFixed(2)+'\n'+
-    '- Top categorias de gasto: '+ctx.topCategories.join(', ');
-  try{
-    var r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sys,messages:[{role:'user',content:q}]})
-    });
-    var d=await r.json();
+  el('ai-input').value='';
+  addAIMessage(q,true);
+  addAILoading();
+  setTimeout(function(){
     removeAILoading();
-    var ans=d.content&&d.content[0]?d.content[0].text:'Não consegui processar. Tente novamente.';
-    addAIMessage(ans,false);
-  }catch(e){removeAILoading();addAIMessage('❌ Erro ao conectar com a IA. Verifique sua conexão.',false);}
-  el('ai-send-btn').disabled=false;
+    var answer = analyzeFinancial(q);
+    addAIMessage(answer,false);
+  },800);
+}
+
+function analyzeFinancial(q){
+  var ctx=getFinancialContext();
+  var ql=q.toLowerCase();
+  
+  // Saldo / disponível
+  if(ql.includes('disponível')||ql.includes('saldo')||ql.includes('tenho')){
+    var resp = '💰 **Seu resumo financeiro:**\n\n';
+    resp += '• Saldo Total: **'+fmt(ctx.balance)+'**\n';
+    resp += '• PJ Basecor: **'+fmt(ctx.pjBalance)+'**\n';
+    resp += '• PF Pessoal: **'+fmt(ctx.pfBalance)+'**\n\n';
+    var totalBancos = (ctx.banks['itau-pf']?ctx.banks['itau-pf'].balance:0)+(ctx.banks['sant-pf']?ctx.banks['sant-pf'].balance:0)+(ctx.banks['sant-pj']?ctx.banks['sant-pj'].balance:0);
+    resp += '🏦 **Total em bancos:** '+fmt(totalBancos)+'\n\n';
+    if(ctx.balance<0) resp += '⚠️ **Atenção:** Saldo negativo! Revise seus gastos.';
+    else if(ctx.balance>0) resp += '✅ Saldo positivo. Continue controlando!';
+    return resp;
+  }
+  
+  // Vencimentos
+  if(ql.includes('vencimento')||ql.includes('vencer')||ql.includes('vencida')||ql.includes('prazo')){
+    var resp = '⚠️ **Situação das contas:**\n\n';
+    if(ctx.overdueCount>0) resp += '🔴 **Vencidas:** '+ctx.overdueCount+' conta(s) — **'+fmt(ctx.overdueTotal)+'**\n';
+    else resp += '✅ Nenhuma conta vencida!\n';
+    if(ctx.upcomingCount>0) resp += '🟡 **Vencendo em 7 dias:** '+ctx.upcomingCount+' conta(s) — **'+fmt(ctx.upcomingTotal)+'**\n';
+    else resp += '✅ Nenhuma conta vencendo nos próximos 7 dias!\n';
+    resp += '\n📋 **A pagar em aberto:** '+fmt(ctx.payableOpen);
+    resp += '\n💚 **A receber em aberto:** '+fmt(ctx.receivableOpen);
+    return resp;
+  }
+  
+  // Fluxo de caixa
+  if(ql.includes('fluxo')||ql.includes('caixa')||ql.includes('entradas')||ql.includes('saídas')){
+    var resp = '📊 **Fluxo de Caixa:**\n\n';
+    resp += '↑ Entradas: **'+fmt(ctx.totalIncome)+'**\n';
+    resp += '↓ Saídas: **'+fmt(ctx.totalExpense)+'**\n';
+    resp += '◈ Resultado: **'+fmt(ctx.balance)+'**\n\n';
+    var pct = ctx.totalIncome>0?((ctx.balance/ctx.totalIncome)*100).toFixed(1):0;
+    if(ctx.balance>0) resp += '✅ Taxa de economia: **'+pct+'%**\n';
+    if(ctx.payableOpen>0) resp += '\n⚠️ Ainda tem **'+fmt(ctx.payableOpen)+'** a pagar.';
+    if(ctx.receivableOpen>0) resp += '\n💰 Tem **'+fmt(ctx.receivableOpen)+'** a receber.';
+    return resp;
+  }
+  
+  // Economizar / gastos
+  if(ql.includes('economiz')||ql.includes('gasto')||ql.includes('despesa')||ql.includes('reduzir')){
+    var resp = '💡 **Análise de gastos:**\n\n';
+    if(ctx.topCategories.length>0){
+      resp += '📌 **Maiores gastos por categoria:**\n';
+      ctx.topCategories.forEach(function(c){resp+='• '+c+'\n';});
+    }
+    resp += '\n💡 **Sugestões:**\n';
+    if(ctx.recurrentCount>0) resp += '• Você tem '+ctx.recurrentCount+' conta(s) recorrente(s) — revise se todas são necessárias\n';
+    if(ctx.totalExpense>ctx.totalIncome) resp += '• ⚠️ Gastos maiores que receitas! Corte despesas não essenciais\n';
+    else resp += '• ✅ Suas receitas cobrem suas despesas\n';
+    resp += '• Revise assinaturas e serviços mensais\n';
+    resp += '• Compare preços de fornecedores regularmente';
+    return resp;
+  }
+  
+  // Previsão 30 dias
+  if(ql.includes('previsão')||ql.includes('30 dias')||ql.includes('próximo')||ql.includes('futuro')){
+    var resp = '📈 **Previsão Financeira:**\n\n';
+    var recTotal = bills.filter(function(b){return !b.paid&&b.recurType==='recur';}).reduce(function(s,b){return s+b.amount;},0);
+    var instTotal = bills.filter(function(b){return !b.paid&&b.recurType==='installment';}).reduce(function(s,b){return s+b.amount;},0);
+    resp += '🔄 Compromissos recorrentes: **'+fmt(recTotal)+'**/mês\n';
+    resp += '📦 Parcelas em aberto: **'+fmt(instTotal)+'**\n';
+    resp += '💰 A receber previsto: **'+fmt(ctx.receivableOpen)+'**\n';
+    var resultado = ctx.receivableOpen - recTotal;
+    resp += '\n📊 **Resultado estimado 30 dias:** **'+fmt(resultado)+'**\n';
+    if(resultado<0) resp += '\n⚠️ Atenção: previsão negativa! Verifique suas receitas.';
+    else resp += '\n✅ Previsão positiva para os próximos 30 dias.';
+    return resp;
+  }
+
+  // Recorrências
+  if(ql.includes('recorr')||ql.includes('mensal')||ql.includes('fixo')){
+    var recur = bills.filter(function(b){return b.recurType==='recur'&&!b.paid;});
+    if(!recur.length) return '✅ Você não tem lançamentos recorrentes cadastrados ainda.';
+    var resp = '🔄 **Lançamentos Recorrentes:**\n\n';
+    recur.forEach(function(b){resp+='• '+b.desc+': **'+fmt(b.amount)+'**/mês\n';});
+    resp += '\n💰 **Total mensal fixo:** '+fmt(recur.reduce(function(s,b){return s+b.amount;},0));
+    return resp;
+  }
+
+  // Parcelas
+  if(ql.includes('parcel')||ql.includes('empréstimo')||ql.includes('financiamento')){
+    var inst = bills.filter(function(b){return b.recurType==='installment'&&!b.paid;});
+    if(!inst.length) return '✅ Você não tem parcelamentos em aberto.';
+    var resp = '📦 **Parcelamentos em aberto:**\n\n';
+    inst.forEach(function(b){resp+='• '+b.desc+': **'+fmt(b.amount)+'** ('+b.installmentNum+'/'+b.installmentTotal+')\n';});
+    resp += '\n💰 **Total parcelado:** '+fmt(inst.reduce(function(s,b){return s+b.amount;},0));
+    return resp;
+  }
+
+  // Default - resumo geral
+  var resp = '📊 **Resumo Geral da Basecor:**\n\n';
+  resp += '💰 Saldo: **'+fmt(ctx.balance)+'**\n';
+  resp += '↑ Entradas: '+fmt(ctx.totalIncome)+'\n';
+  resp += '↓ Saídas: '+fmt(ctx.totalExpense)+'\n';
+  if(ctx.overdueCount>0) resp += '\n🔴 **'+ctx.overdueCount+' conta(s) vencida(s)!**';
+  if(ctx.upcomingCount>0) resp += '\n🟡 **'+ctx.upcomingCount+' conta(s) vencendo em breve.**';
+  resp += '\n\n💡 Pergunte sobre: saldo, vencimentos, fluxo de caixa, gastos, previsão ou parcelas.';
+  return resp;
 }
 
 // ===== RENDER ALL =====
