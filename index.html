@@ -741,7 +741,8 @@ function renderCards(){
   // Cards list
   var cl=el('cards-list');
   if(!cards.length){cl.innerHTML='<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">Nenhum cartão cadastrado</div></div>';return;}
-  cl.innerHTML=cards.map(function(c){
+    cl.innerHTML='';
+  cards.forEach(function(c){
     var used=getCardUsed(c.fid);
     var lim=c.limit||0;
     var avail=Math.max(0,lim-used);
@@ -752,23 +753,39 @@ function renderCards(){
     var dueDate=new Date(nowD.getFullYear(),nowD.getMonth(),dueDay);
     if(dueDate<nowD) dueDate=new Date(nowD.getFullYear(),nowD.getMonth()+1,dueDay);
     var diff=Math.ceil((dueDate-nowD)/(1000*60*60*24));
-    return '<div style="background:linear-gradient(135deg,'+c.color+','+c.color+'cc);border-radius:12px;padding:16px;margin-bottom:10px;color:#fff;position:relative;">'+
+    var card=document.createElement('div');
+    card.style.cssText='background:linear-gradient(135deg,'+c.color+','+c.color+'cc);border-radius:12px;padding:16px;margin-bottom:10px;color:#fff;';
+    card.innerHTML=
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
       '<div>'+
       '<div style="font-size:14px;font-weight:800;">'+c.name+'</div>'+
       '<div style="font-size:10px;opacity:.7;font-family:DM Mono,monospace;">'+c.brand+' · '+(c.account==='pj'?'PJ':'PF')+'</div>'+
       '</div>'+
-      '<div style="display:flex;gap:4px;">'+
-      '<button style="background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;" onclick="openCardModal(''+c.fid+'')">✏️</button>'+
-      '<button style="background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;" onclick="deleteCard(''+c.fid+'')">🗑</button>'+
-      '</div></div>'+
+      '<div style="display:flex;gap:4px;" class="card-btns"></div>'+
+      '</div>'+
       '<div style="margin-top:12px;">'+
-      '<div style="display:flex;justify-content:space-between;font-size:11px;opacity:.8;margin-bottom:4px;"><span>Usado: '+fmt(used)+'</span><span>Limite: '+fmt(lim)+'</span></div>'+
-      '<div style="height:5px;background:rgba(255,255,255,0.25);border-radius:3px;"><div style="height:100%;width:'+pct+'%;background:'+usedColor+';border-radius:3px;transition:width .5s;"></div></div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px;"><span style="opacity:.8">Disponível: <strong>'+fmt(avail)+'</strong></span>'+
-      '<span style="opacity:.8;color:'+(diff<=3?'#fca5a5':'#fff')+'">Vence: '+diff+'d (dia '+dueDay+')</span></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;opacity:.8;margin-bottom:4px;">'+
+      '<span>Usado: '+fmt(used)+'</span><span>Limite: '+fmt(lim)+'</span></div>'+
+      '<div style="height:5px;background:rgba(255,255,255,0.25);border-radius:3px;">'+
+      '<div style="height:100%;width:'+pct+'%;background:'+usedColor+';border-radius:3px;"></div></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px;">'+
+      '<span style="opacity:.8">Disponível: <strong>'+fmt(avail)+'</strong></span>'+
+      '<span style="opacity:.8;color:'+(diff<=3?'#fca5a5':'#fff')+'">Vence: '+diff+'d (dia '+dueDay+')</span>'+
       '</div></div>';
-  }).join('');
+    // Add buttons via JS to avoid quote issues
+    var btns=card.querySelector('.card-btns');
+    var editBtn=document.createElement('button');
+    editBtn.style.cssText='background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;';
+    editBtn.textContent='✏️';
+    (function(fid){editBtn.addEventListener('click',function(){openCardModal(fid);});})(c.fid);
+    btns.appendChild(editBtn);
+    var delBtn=document.createElement('button');
+    delBtn.style.cssText='background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;cursor:pointer;padding:3px 7px;font-size:11px;';
+    delBtn.textContent='🗑';
+    (function(fid){delBtn.addEventListener('click',function(){deleteCard(fid);});})(c.fid);
+    btns.appendChild(delBtn);
+    cl.appendChild(card);
+  });
 
   // Update card filter select
   var cfs=el('card-filter-sel');
