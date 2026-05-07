@@ -1385,7 +1385,13 @@ function deleteBill(fid){
 function openBaixaModal(fid){
   baixaId=fid;
   var b=bills.find(function(x){return x.fid===fid;});if(!b)return;
-  el('baixa-date').value=today();el('baixa-amount').value=b.amount;el('baixa-obs').value='';el('baixa-comp-link').value='';
+  el('baixa-date').value=today();
+  el('baixa-amount').value=b.amount;
+  el('baixa-obs').value='';
+  if(el('baixa-comp-url')) el('baixa-comp-url').value='';
+  if(el('baixa-comp-url-name')) el('baixa-comp-url-name').value='';
+  if(el('comp-preview')) el('comp-preview').innerHTML='';
+  if(el('baixa-comp-file')) el('baixa-comp-file').value='';
   el('baixa-modal').classList.add('open');
 }
 function closeBaixaModal(){el('baixa-modal').classList.remove('open');baixaId=null;}
