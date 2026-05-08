@@ -1401,17 +1401,44 @@ function confirmBaixa(){
   sync('sync');
   var compUrl=val('baixa-comp-url').trim();
   var compName=val('baixa-comp-url-name').trim()||'Comprovante';
+  
+  // Find the bill being paid
+  var paidBill=bills.find(function(b){return b.fid===baixaId;});
+  if(!paidBill)return;
+  
   db.collection('bills').doc(baixaId).update({paid:true,paidAt:date,paidAmount:amount,paidObs:obs,compLink:compUrl,compName:compName})
     .then(function(){
       closeBaixaModal();
       showToast('✅ Baixa realizada!','success');
+      
+      // ✅ AUTO-LAUNCH IN TRANSACTIONS
+      var txType = paidBill.type==='payable' ? 'expense' : 'income';
+      var txDesc = paidBill.type==='payable'
+        ? 'Pagamento: '+paidBill.desc
+        : 'Recebimento: '+paidBill.desc;
+      var txData = {
+        desc: txDesc,
+        amount: amount,
+        type: txType,
+        cat: paidBill.cat||'outros',
+        date: date,
+        obs: obs||'Baixa automática via Contas a Pagar/Receber',
+        account: paidBill.account||currentAccount,
+        recurType: 'once',
+        fromBill: baixaId,
+        createdAt: new Date().toISOString()
+      };
+      db.collection('transactions').add(txData).then(function(){
+        showToast(txType==='expense'?'💸 Saída lançada automaticamente!':'💰 Entrada lançada automaticamente!','success');
+      }).catch(function(){
+        showToast('⚠️ Baixa salva, mas erro ao lançar em Transações.','error');
+      });
+      
       // Auto-create next recurrence if applicable
-      var paidBill = bills.find(function(b){return b.fid===baixaId;});
-      if(paidBill && paidBill.recurType === 'recur'){
-        // Check if next month already exists
-        var nextDue = addMonths(paidBill.due, 1);
-        var alreadyExists = bills.find(function(b){
-          return b.desc===paidBill.desc && b.due===nextDue && !b.paid;
+      if(paidBill.recurType==='recur'){
+        var nextDue=addMonths(paidBill.due,1);
+        var alreadyExists=bills.find(function(b){
+          return b.desc===paidBill.desc&&b.due===nextDue&&!b.paid;
         });
         if(!alreadyExists){
           createNextRecurrence(paidBill).then(function(){
