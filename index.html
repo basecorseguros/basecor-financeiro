@@ -171,6 +171,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 @media(max-width:600px){.stats-grid{grid-template-columns:1fr;}.field-row{grid-template-columns:1fr;}}
 @media print{.sidebar,.topbar,.topbar-right,.btn,.row-actions,.filter-bar,.bills-filter,.no-print{display:none!important;}.main{margin-left:0;}.print-header{display:block!important;}body{background:#fff;}}
 .print-header{display:none;text-align:center;margin-bottom:18px;padding:16px;border-bottom:2px solid var(--orange);}
+.cal-month{border-radius:8px;padding:8px 6px;cursor:pointer;border:2px solid transparent;transition:all .15s;text-align:center;background:var(--bg);}
+.cal-month:hover{border-color:var(--orange);background:var(--orange-dim);}
+.cal-month.selected{border-color:var(--orange);background:var(--orange-dim);}
+.cal-month.has-overdue{border-color:var(--red);}
+.cal-month.has-upcoming{border-color:var(--yellow);}
+.cal-month-name{font-size:11px;font-weight:700;color:var(--text2);}
+.cal-month-pay{font-size:10px;color:var(--red);font-family:'DM Mono',monospace;margin-top:2px;}
+.cal-month-rec{font-size:10px;color:var(--green);font-family:'DM Mono',monospace;}
+.cal-month-count{font-size:9px;color:var(--text3);margin-top:1px;}
 .upload-area{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);position:relative;}
 .upload-area:hover{border-color:var(--orange);background:var(--orange-dim);}
 .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
@@ -289,6 +298,27 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
 
     <div class="view" id="view-bills">
+      <!-- MONTHLY CALENDAR SELECTOR -->
+      <div class="card" style="margin-bottom:14px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:700;">📅 Resumo por Mês</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="cal-prev" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:4px 10px;font-size:14px;">‹</button>
+            <span id="cal-year" style="font-size:13px;font-weight:700;min-width:50px;text-align:center;">2026</span>
+            <button id="cal-next" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:4px 10px;font-size:14px;">›</button>
+          </div>
+        </div>
+        <div id="cal-months" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;"></div>
+        <!-- Selected month detail -->
+        <div id="cal-detail" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:13px;font-weight:700;" id="cal-detail-title">Janeiro 2026</div>
+            <button id="cal-detail-filter" class="btn btn-ghost" style="font-size:11px;padding:4px 9px;">Ver só este mês</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;" id="cal-detail-stats"></div>
+        </div>
+      </div>
+
       <div class="bills-filter">
         <button class="btn btn-danger" id="btn-nova-pagar">+ A Pagar</button>
         <button class="btn btn-success" id="btn-nova-receber">+ A Receber</button>
@@ -1143,6 +1173,18 @@ function wireEvents(){
   el('btn-tx-filter').addEventListener('click',renderTxTable);
   el('tx-search').addEventListener('input',renderTxTable);
   el('bill-filter-status').addEventListener('change',renderBillsTable);
+  // Calendar
+  el('cal-prev').addEventListener('click',function(){calYear--;calSelectedMonth=null;el('cal-detail').style.display='none';renderCalendar();});
+  el('cal-next').addEventListener('click',function(){calYear++;calSelectedMonth=null;el('cal-detail').style.display='none';renderCalendar();});
+  el('cal-detail-filter').addEventListener('click',function(){
+    if(!calSelectedMonth)return;
+    el('bill-filter-from').value=calSelectedMonth+'-01';
+    var lastDay=new Date(parseInt(calSelectedMonth.split('-')[0]),parseInt(calSelectedMonth.split('-')[1]),0).getDate();
+    el('bill-filter-to').value=calSelectedMonth+'-'+String(lastDay).padStart(2,'0');
+    renderBillsTable();
+    // Scroll to bills table
+    el('bills-body').scrollIntoView({behavior:'smooth'});
+  });
   el('bill-filter-type').addEventListener('change',renderBillsTable);
   el('bill-filter-acct').addEventListener('change',renderBillsTable);
   el('btn-bill-filter').addEventListener('click',renderBillsTable);
@@ -1669,6 +1711,103 @@ function analyzeFinancial(q){
   if(ctx.upcomingCount>0) resp += '\n🟡 **'+ctx.upcomingCount+' conta(s) vencendo em breve.**';
   resp += '\n\n💡 Pergunte sobre: saldo, vencimentos, fluxo de caixa, gastos, previsão ou parcelas.';
   return resp;
+}
+
+// ===== MONTHLY CALENDAR =====
+var calYear = new Date().getFullYear();
+var calSelectedMonth = null;
+var MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function renderCalendar(){
+  el('cal-year').textContent = calYear;
+  var grid = el('cal-months');
+  if(!grid) return;
+  grid.innerHTML = '';
+  
+  var now = new Date();
+  var nowMonth = now.getMonth();
+  var nowYear = now.getFullYear();
+  
+  for(var m = 0; m < 12; m++){
+    var monthStr = calYear + '-' + String(m+1).padStart(2,'0');
+    
+    // Filter bills for this month
+    var monthBills = bills.filter(function(b){
+      return b.due && b.due.substring(0,7) === monthStr;
+    });
+    
+    var payTotal = monthBills.filter(function(b){return b.type==='payable';}).reduce(function(s,b){return s+b.amount;},0);
+    var recTotal = monthBills.filter(function(b){return b.type==='receivable';}).reduce(function(s,b){return s+b.amount;},0);
+    var payPaid = monthBills.filter(function(b){return b.type==='payable'&&b.paid;}).reduce(function(s,b){return s+(b.paidAmount||b.amount);},0);
+    var recPaid = monthBills.filter(function(b){return b.type==='receivable'&&b.paid;}).reduce(function(s,b){return s+(b.paidAmount||b.amount);},0);
+    var overdueCount = monthBills.filter(function(b){return !b.paid&&billStatus(b)==='vencido';}).length;
+    var count = monthBills.length;
+    
+    var div = document.createElement('div');
+    div.className = 'cal-month' +
+      (calSelectedMonth===monthStr?' selected':'') +
+      (overdueCount>0?' has-overdue':'') +
+      (m===nowMonth&&calYear===nowYear&&overdueCount===0&&payTotal>0?' has-upcoming':'');
+    
+    // Current month highlight
+    var isCurrentMonth = m===nowMonth && calYear===nowYear;
+    if(isCurrentMonth) div.style.background = 'var(--orange-dim)';
+    
+    div.innerHTML =
+      '<div class="cal-month-name">' + MONTHS[m] + (isCurrentMonth?' ●':'') + '</div>' +
+      (payTotal>0?'<div class="cal-month-pay">-'+fmtS(payTotal)+'</div>':'<div class="cal-month-pay" style="color:var(--text3)">-R$0</div>') +
+      (recTotal>0?'<div class="cal-month-rec">+'+fmtS(recTotal)+'</div>':'') +
+      (count>0?'<div class="cal-month-count">'+count+' conta'+(count>1?'s':'')+'</div>':'<div class="cal-month-count" style="color:var(--text3)">—</div>');
+    
+    (function(ms, py, rt, pp, rp, cnt, od, mn, yr){
+      div.addEventListener('click', function(){
+        calSelectedMonth = calSelectedMonth===ms?null:ms;
+        showCalDetail(ms, py, rt, pp, rp, cnt, od, mn, yr);
+        renderCalendar();
+      });
+    })(monthStr, payTotal, recTotal, payPaid, recPaid, count, overdueCount, m, calYear);
+    
+    grid.appendChild(div);
+  }
+}
+
+function showCalDetail(monthStr, payTotal, recTotal, payPaid, recPaid, count, overdueCount, monthIdx, year){
+  var detail = el('cal-detail');
+  if(!detail) return;
+  
+  if(calSelectedMonth !== monthStr){
+    detail.style.display = 'none';
+    return;
+  }
+  
+  detail.style.display = 'block';
+  el('cal-detail-title').textContent = MONTHS_FULL[monthIdx] + ' ' + year;
+  
+  var payOpen = payTotal - payPaid;
+  var recOpen = recTotal - recPaid;
+  var balance = recTotal - payTotal;
+  
+  var stats = el('cal-detail-stats');
+  stats.innerHTML =
+    '<div style="background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:10px;text-align:center;">' +
+      '<div style="font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;font-family:DM Mono,monospace;">💸 A Pagar</div>' +
+      '<div style="font-size:16px;font-weight:800;color:var(--red);font-family:DM Mono,monospace;">' + fmt(payTotal) + '</div>' +
+      '<div style="font-size:10px;color:var(--text3);">Pago: ' + fmt(payPaid) + '</div>' +
+      '<div style="font-size:10px;color:var(--red);">Em aberto: ' + fmt(payOpen) + '</div>' +
+    '</div>' +
+    '<div style="background:var(--green-dim);border:1px solid var(--green);border-radius:8px;padding:10px;text-align:center;">' +
+      '<div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;font-family:DM Mono,monospace;">💰 A Receber</div>' +
+      '<div style="font-size:16px;font-weight:800;color:var(--green);font-family:DM Mono,monospace;">' + fmt(recTotal) + '</div>' +
+      '<div style="font-size:10px;color:var(--text3);">Recebido: ' + fmt(recPaid) + '</div>' +
+      '<div style="font-size:10px;color:var(--green);">Em aberto: ' + fmt(recOpen) + '</div>' +
+    '</div>' +
+    '<div style="background:'+(balance>=0?'var(--blue-dim)':'var(--red-dim)')+';border:1px solid '+(balance>=0?'var(--blue)':'var(--red)')+';border-radius:8px;padding:10px;text-align:center;">' +
+      '<div style="font-size:10px;color:'+(balance>=0?'var(--blue)':'var(--red)')+';font-weight:700;text-transform:uppercase;font-family:DM Mono,monospace;">◈ Resultado</div>' +
+      '<div style="font-size:16px;font-weight:800;color:'+(balance>=0?'var(--blue)':'var(--red)')+';font-family:DM Mono,monospace;">' + fmt(balance) + '</div>' +
+      '<div style="font-size:10px;color:var(--text3);">' + count + ' conta(s) no mês</div>' +
+      (overdueCount>0?'<div style="font-size:10px;color:var(--red);">⚠️ '+overdueCount+' vencida(s)</div>':'<div style="font-size:10px;color:var(--green);">✅ Sem atrasos</div>') +
+    '</div>';
 }
 
 // ===== RENDER ALL =====
