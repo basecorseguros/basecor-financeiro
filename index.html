@@ -311,11 +311,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <div id="cal-months" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;"></div>
         <!-- Selected month detail -->
         <div id="cal-detail" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:13px;font-weight:700;" id="cal-detail-title">Janeiro 2026</div>
-            <button id="cal-detail-filter" class="btn btn-ghost" style="font-size:11px;padding:4px 9px;">Ver só este mês</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:14px;font-weight:800;" id="cal-detail-title">Janeiro 2026</div>
+            <button id="cal-detail-filter" class="btn btn-ghost" style="font-size:11px;padding:4px 9px;">🔍 Filtrar este mês</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;" id="cal-detail-stats"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;" id="cal-detail-stats"></div>
+          <div id="cal-detail-list" style="max-height:320px;overflow-y:auto;"></div>
         </div>
       </div>
 
@@ -1188,6 +1189,9 @@ function wireEvents(){
   el('bill-filter-type').addEventListener('change',renderBillsTable);
   el('bill-filter-acct').addEventListener('change',renderBillsTable);
   el('btn-bill-filter').addEventListener('click',renderBillsTable);
+  el('bill-filter-from').addEventListener('change',renderBillsTable);
+  el('bill-filter-to').addEventListener('change',renderBillsTable);
+  el('bill-filter-acct').addEventListener('change',renderBillsTable);
   el('btn-rpt-filter').addEventListener('click',renderReports);
   el('btn-print').addEventListener('click',printReport);
   el('btn-add-cat').addEventListener('click',addCat);
@@ -1775,19 +1779,15 @@ function renderCalendar(){
 function showCalDetail(monthStr, payTotal, recTotal, payPaid, recPaid, count, overdueCount, monthIdx, year){
   var detail = el('cal-detail');
   if(!detail) return;
-  
-  if(calSelectedMonth !== monthStr){
-    detail.style.display = 'none';
-    return;
-  }
-  
+  if(calSelectedMonth !== monthStr){ detail.style.display='none'; return; }
   detail.style.display = 'block';
   el('cal-detail-title').textContent = MONTHS_FULL[monthIdx] + ' ' + year;
-  
+
   var payOpen = payTotal - payPaid;
   var recOpen = recTotal - recPaid;
   var balance = recTotal - payTotal;
-  
+
+  // ---- SUMMARY CARDS ----
   var stats = el('cal-detail-stats');
   stats.innerHTML =
     '<div style="background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:10px;text-align:center;">' +
@@ -1808,6 +1808,91 @@ function showCalDetail(monthStr, payTotal, recTotal, payPaid, recPaid, count, ov
       '<div style="font-size:10px;color:var(--text3);">' + count + ' conta(s) no mês</div>' +
       (overdueCount>0?'<div style="font-size:10px;color:var(--red);">⚠️ '+overdueCount+' vencida(s)</div>':'<div style="font-size:10px;color:var(--green);">✅ Sem atrasos</div>') +
     '</div>';
+
+  // ---- DETAILED BILL LIST ----
+  var monthBills = bills.filter(function(b){ return b.due && b.due.substring(0,7)===monthStr; });
+  monthBills.sort(function(a,b){ return a.due>b.due?1:-1; });
+
+  var listEl = el('cal-detail-list');
+  if(!listEl) return;
+  listEl.innerHTML = '';
+
+  if(!monthBills.length){
+    listEl.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Nenhuma conta neste mês</div></div>';
+    return;
+  }
+
+  // Separate payable and receivable
+  var payables = monthBills.filter(function(b){ return b.type==='payable'; });
+  var receivables = monthBills.filter(function(b){ return b.type==='receivable'; });
+
+  function renderBillGroup(title, items, color){
+    if(!items.length) return;
+    var header = document.createElement('div');
+    header.style.cssText='font-size:11px;font-weight:700;color:'+color+';text-transform:uppercase;font-family:DM Mono,monospace;padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px;';
+    header.textContent = title + ' ('+items.length+')';
+    listEl.appendChild(header);
+
+    items.forEach(function(b){
+      var st = billStatus(b);
+      var stColors={aberto:'var(--yellow)',vencido:'var(--red)',pago:'var(--green)',recebido:'var(--green)'};
+      var stLabels={aberto:'Em Aberto',vencido:'Vencido',pago:'Pago',recebido:'Recebido'};
+      var c = getCat(b.cat);
+      var dt = daysText(b);
+      var dtCol = st==='vencido'?'var(--red)':st==='aberto'?'var(--yellow)':'var(--green)';
+
+      var row = document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:8px;';
+
+      // Status dot
+      var dot = document.createElement('div');
+      dot.style.cssText='width:8px;height:8px;border-radius:50%;background:'+stColors[st]+';flex-shrink:0;';
+      row.appendChild(dot);
+
+      // Info
+      var info = document.createElement('div');
+      info.style.cssText='flex:1;min-width:0;';
+      info.innerHTML =
+        '<div style="font-size:12px;font-weight:600;">'+b.desc+'</div>'+
+        (b.recurType==='installment'&&b.installmentNum?'<span style="background:var(--blue-dim);color:var(--blue);padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;">📦 '+b.installmentNum+'/'+b.installmentTotal+'</span> ':'') +
+        (b.recurType==='recur'?'<span style="background:var(--green-dim);color:var(--green);padding:1px 5px;border-radius:10px;font-size:9px;font-weight:700;">🔄 RECORRENTE</span> ':'')+
+        '<div style="font-size:10px;color:'+dtCol+';font-family:DM Mono,monospace;">'+dt+' · '+fmtD(b.due)+'</div>'+
+        '<div style="font-size:10px;color:var(--text3);">'+c.icon+' '+c.name+'</div>';
+      row.appendChild(info);
+
+      // Amount
+      var amt = document.createElement('div');
+      amt.style.cssText='font-size:13px;font-weight:700;font-family:DM Mono,monospace;color:'+(b.type==='payable'?'var(--red)':'var(--green)')+';flex-shrink:0;';
+      amt.textContent = (b.type==='payable'?'-':'+') + fmt(b.amount);
+      row.appendChild(amt);
+
+      // Action buttons
+      var actions = document.createElement('div');
+      actions.style.cssText='display:flex;gap:3px;flex-shrink:0;';
+
+      if(!b.paid){
+        var payBtn = document.createElement('button');
+        payBtn.className='btn-act pay';payBtn.textContent='✅';payBtn.title='Dar Baixa';
+        (function(fid){payBtn.addEventListener('click',function(){openBaixaModal(fid);});})(b.fid);
+        actions.appendChild(payBtn);
+      } else {
+        var undoBtn = document.createElement('button');
+        undoBtn.className='btn-act undo';undoBtn.textContent='↩️';undoBtn.title='Desfazer';
+        (function(fid){undoBtn.addEventListener('click',function(){undoBaixa(fid);});})(b.fid);
+        actions.appendChild(undoBtn);
+      }
+      var editBtn = document.createElement('button');
+      editBtn.className='btn-act edit';editBtn.textContent='✏️';editBtn.title='Editar';
+      (function(btype,fid){editBtn.addEventListener('click',function(){openBillModal(btype,fid);});})(b.type,b.fid);
+      actions.appendChild(editBtn);
+
+      row.appendChild(actions);
+      listEl.appendChild(row);
+    });
+  }
+
+  renderBillGroup('💸 Contas a Pagar', payables, 'var(--red)');
+  renderBillGroup('💰 Contas a Receber', receivables, 'var(--green)');
 }
 
 // ===== RENDER ALL =====
