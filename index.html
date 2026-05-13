@@ -273,7 +273,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
       <div class="grid-3">
         <div class="card"><div class="card-header"><div><div class="card-title">Fluxo de Caixa</div><div class="card-sub">Entradas × Saídas</div></div></div><div class="chart-wrap"><canvas id="flowChart" height="175"></canvas></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title">Por Categoria</div></div></div><div style="display:flex;align-items:center;gap:10px;padding:0 13px 13px;"><canvas id="donutChart" width="85" height="85"></canvas><div style="flex:1;" id="donut-legend"></div></div></div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Por Categoria</div><div class="card-sub">Distribuição de saídas</div></div></div>
+          <div style="padding:0 13px 13px;">
+            <div style="display:flex;justify-content:center;margin-bottom:10px;">
+              <canvas id="donutChart" width="160" height="160"></canvas>
+            </div>
+            <div id="donut-legend" style="display:flex;flex-direction:column;gap:5px;"></div>
+          </div>
+        </div>
       </div>
       <div class="grid-2">
         <div class="card"><div class="card-header"><div><div class="card-title">Últimos Lançamentos</div></div></div><div class="tx-list" id="recent-tx"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Nenhum lançamento</div></div></div></div>
@@ -291,6 +299,24 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <input type="date" id="tx-filter-to" title="Até">
         <button class="btn btn-ghost" id="btn-tx-filter">🔍</button>
       </div>
+      <!-- TOTALS SUMMARY BAR -->
+      <div id="tx-summary" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);">📊 RESUMO DA BUSCA</div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--green-dim);border-radius:20px;">
+          <span style="font-size:10px;color:var(--green);font-weight:700;">↑ ENTRADAS</span>
+          <span style="font-size:13px;font-weight:800;color:var(--green);font-family:DM Mono,monospace;" id="tx-sum-inc">R$ 0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--red-dim);border-radius:20px;">
+          <span style="font-size:10px;color:var(--red);font-weight:700;">↓ SAÍDAS</span>
+          <span style="font-size:13px;font-weight:800;color:var(--red);font-family:DM Mono,monospace;" id="tx-sum-exp">R$ 0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--orange-dim);border-radius:20px;">
+          <span style="font-size:10px;color:var(--orange);font-weight:700;">◈ SALDO</span>
+          <span style="font-size:13px;font-weight:800;color:var(--orange);font-family:DM Mono,monospace;" id="tx-sum-bal">R$ 0</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;" id="tx-sum-count">0 lançamentos</div>
+      </div>
+
       <div class="tx-table">
         <div class="tbl-head tx-cols"><div>Descrição</div><div class="col-cat">Categoria</div><div class="col-acct">Conta</div><div>Data</div><div>Valor</div><div></div></div>
         <div id="tx-body"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Nenhum lançamento</div></div></div>
@@ -2040,6 +2066,19 @@ function renderTxTable(){
   if(sf)list=list.filter(function(t){return t.date>=sf;});
   if(sto)list=list.filter(function(t){return t.date<=sto;});
   var tbody=el('tx-body');
+  // Update summary bar
+  var sumInc=list.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
+  var sumExp=list.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
+  var sumBal=sumInc-sumExp;
+  var sumBar=el('tx-summary');
+  if(sumBar){
+    sumBar.style.display='flex';
+    el('tx-sum-inc').textContent=fmt(sumInc);
+    el('tx-sum-exp').textContent=fmt(sumExp);
+    el('tx-sum-bal').textContent=fmt(sumBal);
+    el('tx-sum-bal').style.color=sumBal>=0?'var(--green)':'var(--red)';
+    el('tx-sum-count').textContent=list.length+' lançamento'+(list.length!==1?'s':'');
+  }
   if(!list.length){tbody.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum lançamento encontrado</div></div>';return;}
   tbody.innerHTML='';
   list.forEach(function(t){
@@ -2196,15 +2235,53 @@ function renderFlowChart(tx){
 }
 
 function renderDonut(tx){
-  var ctx=el('donutChart').getContext('2d');ctx.clearRect(0,0,100,100);
-  var cats={};tx.filter(function(t){return t.type==='expense';}).forEach(function(t){cats[t.cat]=(cats[t.cat]||0)+t.amount;});
+  var canvas=el('donutChart');
+  var ctx=canvas.getContext('2d');
+  var S=160; // canvas size
+  canvas.width=S;canvas.height=S;
+  ctx.clearRect(0,0,S,S);
+  var cats={};
+  tx.filter(function(t){return t.type==='expense';}).forEach(function(t){cats[t.cat]=(cats[t.cat]||0)+t.amount;});
   var entries=Object.entries(cats).sort(function(a,b){return b[1]-a[1];});
   var total=entries.reduce(function(s,e){return s+e[1];},0);
-  el('donut-legend').innerHTML=entries.slice(0,4).map(function(e){var c=getCat(e[0]);return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;font-size:10px;"><div style="width:6px;height:6px;border-radius:50%;background:'+(CC[e[0]]||'#9ca3af')+';flex-shrink:0;"></div><span style="flex:1;">'+c.name+'</span><span style="font-family:DM Mono,monospace;color:var(--text3);">'+(total>0?(e[1]/total*100).toFixed(0):0)+'%</span></div>';}).join('');
-  if(!entries.length){ctx.fillStyle='#eef0f5';ctx.beginPath();ctx.arc(50,50,44,0,Math.PI*2);ctx.fill();return;}
+  var cx=S/2,cy=S/2,R=68,r=36;
+
+  if(!entries.length){
+    ctx.fillStyle='#eef0f5';ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+    el('donut-legend').innerHTML='<div class="empty" style="padding:8px"><div class="empty-text">Sem saídas lançadas</div></div>';
+    return;
+  }
+
+  // Draw donut
   var start=-Math.PI/2;
-  entries.forEach(function(e){var slice=(e[1]/total)*Math.PI*2;ctx.fillStyle=CC[e[0]]||'#9ca3af';ctx.beginPath();ctx.moveTo(50,50);ctx.arc(50,50,44,start,start+slice);ctx.closePath();ctx.fill();start+=slice;});
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(50,50,26,0,Math.PI*2);ctx.fill();
+  entries.forEach(function(e){
+    var slice=(e[1]/total)*Math.PI*2;
+    ctx.fillStyle=CC[e[0]]||'#9ca3af';
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,start,start+slice);ctx.closePath();ctx.fill();
+    start+=slice;
+  });
+  // Center hole
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  // Center text
+  ctx.fillStyle='var(--text2)';ctx.font='bold 11px Plus Jakarta Sans';ctx.textAlign='center';ctx.fillText('Saídas',cx,cy-4);
+  ctx.fillStyle='var(--text3)';ctx.font='9px DM Mono';ctx.fillText(fmt(total),cx,cy+10);
+
+  // Full legend with amounts - all categories
+  var legendEl=el('donut-legend');
+  legendEl.innerHTML='';
+  entries.forEach(function(e){
+    var c=getCat(e[0]);
+    var pct=total>0?(e[1]/total*100).toFixed(1):0;
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML=
+      '<div style="width:10px;height:10px;border-radius:3px;background:'+(CC[e[0]]||'#9ca3af')+';flex-shrink:0;"></div>'+
+      '<span style="flex:1;font-size:12px;font-weight:500;">'+c.icon+' '+c.name+'</span>'+
+      '<span style="font-size:11px;font-weight:700;font-family:DM Mono,monospace;color:var(--red);">'+fmt(e[1])+'</span>'+
+      '<span style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;min-width:32px;text-align:right;">'+pct+'%</span>';
+    legendEl.appendChild(row);
+  });
 }
 
 function drawLine(ctx,labels,data,color){
