@@ -171,6 +171,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 @media(max-width:600px){.stats-grid{grid-template-columns:1fr;}.field-row{grid-template-columns:1fr;}}
 @media print{.sidebar,.topbar,.topbar-right,.btn,.row-actions,.filter-bar,.bills-filter,.no-print{display:none!important;}.main{margin-left:0;}.print-header{display:block!important;}body{background:#fff;}}
 .print-header{display:none;text-align:center;margin-bottom:18px;padding:16px;border-bottom:2px solid var(--orange);}
+.stat-card.clickable{transition:all .2s;position:relative;}
+.stat-card.clickable:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--orange);}
+.card-hint{font-size:9px;color:var(--text3);margin-top:4px;font-family:"DM Mono",monospace;opacity:0;transition:opacity .2s;}
+.stat-card.clickable:hover .card-hint{opacity:1;}
 .cal-month{border-radius:8px;padding:8px 6px;cursor:pointer;border:2px solid transparent;transition:all .15s;text-align:center;background:var(--bg);}
 .cal-month:hover{border-color:var(--orange);background:var(--orange-dim);}
 .cal-month.selected{border-color:var(--orange);background:var(--orange-dim);}
@@ -258,18 +262,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
     <div class="view active" id="view-dashboard">
       <div id="alert-area"></div>
+
+      <!-- MONTH NAVIGATOR -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:14px;box-shadow:var(--shadow);">
+        <button id="dash-prev-month" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:4px 12px;font-size:16px;font-weight:700;">‹</button>
+        <div style="text-align:center;">
+          <div style="font-size:14px;font-weight:800;" id="dash-month-label">Maio 2026</div>
+          <div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace;">Clique nos cards para ver detalhes</div>
+        </div>
+        <button id="dash-next-month" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:4px 12px;font-size:16px;font-weight:700;">›</button>
+      </div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon green">↑</div><div class="stat-label">Entradas</div><div class="stat-value green" id="st-inc">R$ 0</div><div class="stat-delta" id="st-inc-n">0 lançamentos</div></div>
-        <div class="stat-card"><div class="stat-icon red">↓</div><div class="stat-label">Saídas</div><div class="stat-value red" id="st-exp">R$ 0</div><div class="stat-delta" id="st-exp-n">0 lançamentos</div></div>
-        <div class="stat-card"><div class="stat-icon orange">◈</div><div class="stat-label">Saldo</div><div class="stat-value orange" id="st-bal">R$ 0</div><div class="stat-delta" id="st-bal-pct">—</div></div>
-        <div class="stat-card"><div class="stat-icon yellow">⏰</div><div class="stat-label">Vence em 7 dias</div><div class="stat-value yellow" id="st-due">R$ 0</div><div class="stat-delta" id="st-due-n">0 contas</div></div>
+        <div class="stat-card clickable" onclick="goToTx('income')" title="Ver entradas" style="cursor:pointer;"><div class="stat-icon green">↑</div><div class="stat-label">Entradas</div><div class="stat-value green" id="st-inc">R$ 0</div><div class="stat-delta" id="st-inc-n">0 lançamentos</div><div class="card-hint">→ Ver lançamentos</div></div>
+        <div class="stat-card clickable" onclick="goToTx('expense')" title="Ver saídas" style="cursor:pointer;"><div class="stat-icon red">↓</div><div class="stat-label">Saídas</div><div class="stat-value red" id="st-exp">R$ 0</div><div class="stat-delta" id="st-exp-n">0 lançamentos</div><div class="card-hint">→ Ver lançamentos</div></div>
+        <div class="stat-card clickable" onclick="goToTx('')" title="Ver todos" style="cursor:pointer;"><div class="stat-icon orange">◈</div><div class="stat-label">Saldo</div><div class="stat-value orange" id="st-bal">R$ 0</div><div class="stat-delta" id="st-bal-pct">—</div><div class="card-hint">→ Ver lançamentos</div></div>
+        <div class="stat-card clickable" onclick="goToBills('aberto')" title="Ver vencimentos" style="cursor:pointer;"><div class="stat-icon yellow">⏰</div><div class="stat-label">Vence em 7 dias</div><div class="stat-value yellow" id="st-due">R$ 0</div><div class="stat-delta" id="st-due-n">0 contas</div><div class="card-hint">→ Ver contas</div></div>
       </div>
       <!-- SECOND ROW STATS -->
       <div class="stats-grid" style="margin-bottom:16px;">
-        <div class="stat-card green"><div class="stat-icon green">💰</div><div class="stat-label">A Receber (Aberto)</div><div class="stat-value green" id="st-receivable">R$ 0</div><div class="stat-delta" id="st-receivable-n">0 contas</div></div>
-        <div class="stat-card red"><div class="stat-icon red">💸</div><div class="stat-label">A Pagar (Aberto)</div><div class="stat-value red" id="st-payable">R$ 0</div><div class="stat-delta" id="st-payable-n">0 contas</div></div>
-        <div class="stat-card blue"><div class="stat-icon blue">📦</div><div class="stat-label">Parcelas em Aberto</div><div class="stat-value blue" id="st-installments">R$ 0</div><div class="stat-delta" id="st-inst-n">0 parcelas</div></div>
-        <div class="stat-card orange"><div class="stat-icon orange">🔄</div><div class="stat-label">Recorrências Ativas</div><div class="stat-value orange" id="st-recurrences">R$ 0</div><div class="stat-delta" id="st-recur-n">0 contas</div></div>
+        <div class="stat-card clickable" onclick="goToBills('aberto','receivable')" title="Ver a receber" style="cursor:pointer;"><div class="stat-icon green">💰</div><div class="stat-label">A Receber (Aberto)</div><div class="stat-value green" id="st-receivable">R$ 0</div><div class="stat-delta" id="st-receivable-n">0 contas</div><div class="card-hint">→ Ver contas</div></div>
+        <div class="stat-card clickable" onclick="goToBills('aberto','payable')" title="Ver a pagar" style="cursor:pointer;"><div class="stat-icon red">💸</div><div class="stat-label">A Pagar (Aberto)</div><div class="stat-value red" id="st-payable">R$ 0</div><div class="stat-delta" id="st-payable-n">0 contas</div><div class="card-hint">→ Ver contas</div></div>
+        <div class="stat-card clickable" onclick="goToBills('aberto','payable')" title="Ver parcelas" style="cursor:pointer;"><div class="stat-icon blue">📦</div><div class="stat-label">Parcelas em Aberto</div><div class="stat-value blue" id="st-installments">R$ 0</div><div class="stat-delta" id="st-inst-n">0 parcelas</div><div class="card-hint">→ Ver contas</div></div>
+        <div class="stat-card clickable" onclick="goToBills('pago','')" title="Ver pagas no mês" style="cursor:pointer;"><div class="stat-icon green">✅</div><div class="stat-label">Pagas no Mês</div><div class="stat-value green" id="st-paid-month">R$ 0</div><div class="stat-delta" id="st-paid-month-n">0 baixas</div><div class="card-hint">→ Ver contas</div></div>
       </div>
       <div class="grid-3">
         <div class="card"><div class="card-header"><div><div class="card-title">Fluxo de Caixa</div><div class="card-sub">Entradas × Saídas</div></div></div><div class="chart-wrap"><canvas id="flowChart" height="175"></canvas></div></div>
@@ -1233,6 +1247,17 @@ function wireEvents(){
   el('card-tx-modal').addEventListener('click',function(e){if(e.target===this)closeCardTxModal();});
   el('card-filter-sel').addEventListener('change',renderCardTransactions);
   el('btn-ai').addEventListener('click',function(){el('ai-modal').classList.add('open');});
+  // Dashboard month navigation
+  el('dash-prev-month').addEventListener('click',function(){
+    dashMonth--;
+    if(dashMonth<0){dashMonth=11;dashYear--;}
+    renderAll();
+  });
+  el('dash-next-month').addEventListener('click',function(){
+    dashMonth++;
+    if(dashMonth>11){dashMonth=0;dashYear++;}
+    renderAll();
+  });
   el('ai-close-btn').addEventListener('click',function(){el('ai-modal').classList.remove('open');});
   el('ai-modal').addEventListener('click',function(e){if(e.target===this)el('ai-modal').classList.remove('open');});
   el('ai-input').addEventListener('keydown',function(e){if(e.key==='Enter')sendAI();});
@@ -1921,9 +1946,51 @@ function showCalDetail(monthStr, payTotal, recTotal, payPaid, recPaid, count, ov
   renderBillGroup('💰 Contas a Receber', receivables, 'var(--green)');
 }
 
+// ===== DASHBOARD MONTH NAVIGATION =====
+var dashYear = new Date().getFullYear();
+var dashMonth = new Date().getMonth(); // 0-indexed
+
+function updateDashMonthLabel(){
+  var label = MONTHS_FULL[dashMonth] + ' ' + dashYear;
+  var el2 = el('dash-month-label');
+  if(el2) el2.textContent = label;
+}
+
+function goToTx(type){
+  navigate('transactions');
+  var now = new Date(dashYear, dashMonth, 1);
+  var from = dashYear+'-'+String(dashMonth+1).padStart(2,'0')+'-01';
+  var lastDay = new Date(dashYear, dashMonth+1, 0).getDate();
+  var to = dashYear+'-'+String(dashMonth+1).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  setTimeout(function(){
+    if(el('tx-filter-from')) el('tx-filter-from').value = from;
+    if(el('tx-filter-to')) el('tx-filter-to').value = to;
+    if(el('tx-filter-type')) el('tx-filter-type').value = type;
+    renderTxTable();
+  }, 100);
+}
+
+function goToBills(status, type){
+  navigate('bills');
+  var from = dashYear+'-'+String(dashMonth+1).padStart(2,'0')+'-01';
+  var lastDay = new Date(dashYear, dashMonth+1, 0).getDate();
+  var to = dashYear+'-'+String(dashMonth+1).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  setTimeout(function(){
+    if(el('bill-filter-status')) el('bill-filter-status').value = status;
+    if(el('bill-filter-type')) el('bill-filter-type').value = type||'';
+    if(el('bill-filter-from')) el('bill-filter-from').value = from;
+    if(el('bill-filter-to')) el('bill-filter-to').value = to;
+    renderBillsTable();
+  }, 100);
+}
+
 // ===== RENDER ALL =====
 function renderAll(){
-  var tx=filtTx();
+  updateDashMonthLabel();
+  var monthStr = dashYear+'-'+String(dashMonth+1).padStart(2,'0');
+  // Filter transactions by selected month
+  var allTx = filtTx();
+  var tx = allTx.filter(function(t){ return t.date && t.date.substring(0,7)===monthStr; });
   var inc=tx.filter(function(t){return t.type==='income';}).reduce(function(s,t){return s+t.amount;},0);
   var exp=tx.filter(function(t){return t.type==='expense';}).reduce(function(s,t){return s+t.amount;},0);
   var bal=inc-exp;
@@ -1955,12 +2022,16 @@ function renderAll(){
   el('st-payable-n').textContent=payable.length+' contas';
   el('st-installments').textContent=fmt(installmentsOpen.reduce(function(s,b){return s+b.amount;},0));
   el('st-inst-n').textContent=installmentsOpen.length+' parcelas';
-  el('st-recurrences').textContent=fmt(recurrencesOpen.reduce(function(s,b){return s+b.amount;},0));
-  el('st-recur-n').textContent=recurrencesOpen.length+' contas';
+  el('st-recurrences') && (el('st-recurrences').textContent=fmt(recurrencesOpen.reduce(function(s,b){return s+b.amount;},0)));
+  el('st-recur-n') && (el('st-recur-n').textContent=recurrencesOpen.length+' contas');
+  // Pagas no mês
+  var paidMonth=bills.filter(function(b){return b.paid&&b.paidAt&&b.paidAt.substring(0,7)===monthStr;});
+  el('st-paid-month').textContent=fmt(paidMonth.reduce(function(s,b){return s+(b.paidAmount||b.amount);},0));
+  el('st-paid-month-n').textContent=paidMonth.length+' baixas';
   // Alerts
   var ov=bills.filter(function(b){return !b.paid&&billStatus(b)==='vencido';});
   el('alert-area').innerHTML=ov.length>0?'<div class="alert-box red">⚠️ <strong>'+ov.length+' conta(s) vencida(s)!</strong> Total: '+fmt(ov.reduce(function(s,b){return s+b.amount;},0))+'</div>':'';
-  renderRecentTx(tx);renderCatBars(tx);renderFlowChart(tx);renderDonut(tx);
+  renderRecentTx(tx);renderCatBars(tx);renderFlowChart(allTx);renderDonut(tx);
   renderUpcoming();renderBillsTable();renderBillStats();
   renderTxTable();renderReports();renderCatMgr();renderBanks();
 }
